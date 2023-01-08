@@ -2,7 +2,11 @@
 # Modele Nieparametryczne                                                     #
 #*****************************************************************************#
 
+
+
 # Inicjalizacja bibliotek
+
+
 
 library(rpart)
 library(rpart.plot)
@@ -11,16 +15,26 @@ library("dplyr")
 library("tidyr")
 library("lubridate")
 
+
 # Ładowanie danych
+
+
 
 load(file="dane_zaliczenie.RData")
 
+
+
 # Sprawdzanie braków danych
 
+
+
 missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
-                    numbers=TRUE, sortVars=TRUE,
-                    labels=names(proba_uczaca), cex.axis=.7,
-                    gap=3, ylab=c("Missing data","Pattern"))
+                          numbers=TRUE, sortVars=TRUE,
+                          labels=names(proba_uczaca), cex.axis=.7,
+                          gap=3, ylab=c("Missing data","Pattern"))
+
+
+
 
 
 # Analizując braki danych znaleziono 4 zmienne w których występują braki danych na poziomie 86%. Wstępnie usunięte
