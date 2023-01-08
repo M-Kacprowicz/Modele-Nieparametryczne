@@ -18,14 +18,52 @@ library("lubridate")
 
 # Ładowanie danych
 
-
-
 load(file="dane_zaliczenie.RData")
-
-
 
 # Sprawdzanie braków danych
 
+
+create_plot <- function(variable) {
+  ggplot(proba_uczaca , aes(x=factor(variable), fill=factor(variable))) + 
+    geom_bar() +
+    theme(legend.position="none")
+}
+
+table(proba_uczaca$expiryyear)
+create_plot(proba_uczaca$expiryyear)
+
+table(proba_uczaca$issuer)
+create_plot(proba_uczaca$issuer)
+
+table(proba_uczaca$mccname)
+create_plot(proba_uczaca$mccname)
+
+table(proba_uczaca$recurringaction)
+create_plot(proba_uczaca$recurringaction)
+
+table(proba_uczaca$type)
+create_plot(proba_uczaca$type)
+
+table(proba_uczaca$description)
+create_plot(proba_uczaca$description)
+
+table(proba_uczaca$level)
+create_plot(proba_uczaca$level)
+
+table(proba_uczaca$status)
+create_plot(proba_uczaca$status)
+
+table(proba_uczaca$countrycode)
+create_plot(proba_uczaca$countrycode)
+
+table(proba_uczaca$expirymonth)
+create_plot(proba_uczaca$expirymonth)
+
+table(proba_uczaca$listtype)
+create_plot(proba_uczaca$listtype)
+
+table(proba_uczaca$acquirerconnectionmethod)
+create_plot(proba_uczaca$acquirerconnectionmethod)
 
 
 missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
