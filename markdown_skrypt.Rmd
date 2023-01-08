@@ -25,6 +25,12 @@ library("ggplot2")
 load(file="dane_zaliczenie.RData")
 ```
 
+## Usuwanie niepotrzebnych kolumn
+```{r}
+proba_uczaca <- subset(proba_uczaca, select = -c(id,initialtransaction_id))
+
+```
+
 
 ```{r data_presetation}
 create_plot <- function(variable) {
@@ -69,6 +75,10 @@ table(proba_uczaca$listtype)
 
 create_plot(proba_uczaca$acquirerconnectionmethod)
 table(proba_uczaca$acquirerconnectionmethod)
+
+#TODO zastanowić się nad podziałem createtime np : kwartalnie lub miesięcznie
+ggplot(proba_uczaca, aes(x=createtime)) + 
+  geom_histogram(color="white", fill="darkgrey")
 ```
 
 
@@ -97,25 +107,110 @@ proba_uczaca <- proba_uczaca %>%
 proba_uczaca <- proba_uczaca %>% 
   mutate(payclickedtime = coalesce(payclickedtime, payclickedtime_imp))
 
+# Imputacja description
+proba_uczaca$description[is.na(proba_uczaca$description)] <- ""
+# Usunięcie tymczasowej zmiennej 
+
+proba_uczaca <- subset(proba_uczaca, select = -c(payclickedtime_imp,time_difference,createtime,payclickedtime))
 
 # Sprawdzanie braków danych
 
+
+```
+
+```{r}
 missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
                           numbers=TRUE, sortVars=TRUE,
                           labels=names(proba_uczaca), cex.axis=.7,
                           gap=3, ylab=c("Missing data","Pattern"))
 ```
 
-
-
-```{r reocde, echo=FALSE}
-table(proba_uczaca$issuer)
+```{r recode, echo=FALSE}
+table(proba_uczaca$recurringaction)
 proba_uczaca$countrycode <- recode(proba_uczaca$countrycode, "PL"="PL", .default = "other")
 proba_uczaca$status <- recode(proba_uczaca$status, "completed successfully"="success", .default = "failed")
 proba_uczaca$issuer <- recode(proba_uczaca$issuer, "VISA"="VISA", .default = "MASTERCARD")
+proba_uczaca$recurringaction <- recode(proba_uczaca$recurringaction, "AUTO"="rekurencyjne", .default = "inicjalizujące")
+proba_uczaca$level <- recode(proba_uczaca$level,
+                             "WORLD"="WORLD","WORLD"="WORLD BLACK", "WORLD"="CLASSIC","WORLD"="WORLD BLACK EDITION","WORLD"="NEW WORLD",
+                             "STANDARD"="STANDARD","STANDARD"="STANDARD UNEMBOSSED","STANDARD"="CLASSIC",
+                             "GOLD"="GOLD",
+                             "PREPAID"="PREPAID","PREPAID"="PREPAID PLATINUM","PREPAID"="PREPAID RELOADABLE ",
+                             "BUSINESS"="BUSINESS","BUSINESS"="CORPORATE/STANDARD","BUSINESS"="CORPORATE T&E",
+                             .default = "other")
+proba_uczaca$description <- recode(proba_uczaca$description,
+                             "platnosci za faktury za tv internet telefon"="Telekomunikacja","Orange Flex"="Telekomunikacja", "Orange On-line:"="Telekomunikacja","PLAY - FAKTURA"="Telekomunikacja","RedBull Mobile - FAKTURA"="Telekomunikacja",
+                             "iTaxi"="Transport","Przejazd A4Go"="Transport",
+                             .default = "inne")
+
+create_plot(proba_uczaca$description)
+#todo do pogrupowania
+table(proba_uczaca$description)
+```
+
+
+```{r remove all NA}
+# Usunięcie tranzakcji inicjalizujących z bazy
+proba_uczaca <- proba_uczaca[!(proba_uczaca$recurringaction=="inicjalizujące"),]
+```
+
+
+```{r remove all NA}
+proba_uczaca_removed_na <- na.omit(proba_uczaca)
+```
+
+
+
+```{r tree_classifier NA}
+drzewo <- rpart(
+  formula = status ~ .,
+  data = proba_uczaca,
+  
+)
 
 ```
 
-```{r km_prep, echo=FALSE}
+```{r tree_describe NA}
 
+drzewo
+
+
+summary(drzewo)
+# Narysować wykres drzewa
+rpart.plot(x= drzewo,
+           box.palette = "Red",
+           branch.type = 5)
+```
+```{r tree_describe NA}
+
+drzewo.duze <- rpart(
+  formula = status ~ .,
+  data = proba_uczaca,
+  control = rpart.control(cp=0)
+)
+```
+
+```{r tree_describe NA}
+
+bledy <- drzewo.duze$cptable
+rpart.plot(x=drzewo.duze)
+
+nr.min.cp <- which.min(bledy[, "xerror"])  # numer min cp w sprawdzaniu krzyżowym
+tmp2 <- sum(bledy[nr.min.cp, c("xerror", "xstd")]) # min błąd + odchylenie standardowe
+optymalny <- which(bledy[, "xerror"] < tmp2)[1] # nr optymalnego drzewa
+
+drz.veh.p <- prune(drzewo.duze, cp = bledy[optymalny, "CP"]) # przycięcie drzewa
+rpart.plot(drz.veh.p)
+```
+
+```{r tree_describe NA}
+
+rpart.rules(
+  x = drz.veh.p,
+  style = "tallw"
+)
+levels(proba_uczaca$status)
+reguly <- rpart.rules(x= drz.veh.p)
+
+summary(drz.veh.p)
 ```
