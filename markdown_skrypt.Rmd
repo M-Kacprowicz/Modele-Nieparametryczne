@@ -25,13 +25,18 @@ library("ggplot2")
 load(file="dane_zaliczenie.RData")
 ```
 
-## Usuwanie niepotrzebnych kolumn
-```{r}
-proba_uczaca <- subset(proba_uczaca, select = -c(id,initialtransaction_id))
 
+
+## Tworzenie nowych zmiennych
+```{r}
+proba_uczaca$day_of_week_createtime <- weekdays(proba_uczaca$createtime, abbreviate = FALSE)
+proba_uczaca$month_createtime <- months(proba_uczaca$createtime, abbreviate = FALSE)
+proba_uczaca$year_createtime <- year(proba_uczaca$createtime)
+
+proba_uczaca$expirydate <- as.integer(paste0(proba_uczaca$expiryyear,proba_uczaca$expirymonth))
 ```
 
-
+## Surowy zbiór danych
 ```{r data_presetation}
 create_plot <- function(variable) {
   ggplot(proba_uczaca , aes(x=factor(variable), fill=factor(variable))) + 
@@ -39,11 +44,6 @@ create_plot <- function(variable) {
     theme(legend.position="none",axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
   
 }
-
-proba_uczaca$day_of_week_createtime <- weekdays(proba_uczaca$createtime, abbreviate = FALSE)
-proba_uczaca$month_createtime <- months(proba_uczaca$createtime, abbreviate = FALSE)
-
-
 create_plot(proba_uczaca$expiryyear)
 table(proba_uczaca$expiryyear)
 
@@ -86,13 +86,16 @@ table(proba_uczaca$day_of_week_createtime)
 create_plot(proba_uczaca$month_createtime)
 table(proba_uczaca$month_createtime)
 
-#TODO zastanowić się nad podziałem createtime np : kwartalnie lub miesięcznie
-ggplot(proba_uczaca, aes(x=createtime)) + 
-  geom_histogram(color="white", fill="darkgrey")
+create_plot(proba_uczaca$expirydate)
+table(proba_uczaca$expirydate)
+
+create_plot(proba_uczaca$year_createtime)
+table(proba_uczaca$year_createtime)
+
 ```
 
 
-## Brakujące dane
+## Przedstawienie brakujących danych
 ```{r missing data}
 missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
                           numbers=TRUE, sortVars=TRUE,
@@ -102,32 +105,8 @@ missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
 
 
 
-
-# Analizując braki danych znaleziono 4 zmienne w których występują braki danych na poziomie 86%. Wstępnie usunięte
-# zostaną 3 zmienne, które wydają się nie mieć wpływu na model predykcyjny, który chcemy utworzyć.
-
-proba_uczaca <- subset(proba_uczaca, select = -c(browseragent, screenheight, screenwidth))
-
-# Imputacja braków danych w zmiennej "payclickedtime"
-proba_uczaca$time_difference <- proba_uczaca$payclickedtime - proba_uczaca$createtime
-mean_difftime <- mean(proba_uczaca$time_difference, na.rm = T)
-proba_uczaca$payclickedtime_imp <- proba_uczaca$createtime + mean_difftime
-proba_uczaca <- proba_uczaca %>%
-  mutate_at(c("time_difference"), ~replace_na(.,mean_difftime))
-proba_uczaca <- proba_uczaca %>% 
-  mutate(payclickedtime = coalesce(payclickedtime, payclickedtime_imp))
-
-# Imputacja description
-proba_uczaca$description[is.na(proba_uczaca$description)] <- ""
-# Usunięcie tymczasowej zmiennej 
-
-proba_uczaca <- subset(proba_uczaca, select = -c(payclickedtime_imp,createtime,payclickedtime))
-
-# Sprawdzanie braków danych
-
-
 ```
-
+# Sprawdzanie braków danych po usunięciu niepotrzebnych kolumn
 ```{r}
 missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
                           numbers=TRUE, sortVars=TRUE,
@@ -137,19 +116,19 @@ missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
 ```
 
 ```{r remove all NA}
-# Usunięcie tranzakcji inicjalizujących z bazy
-proba_uczaca <- proba_uczaca[!(proba_uczaca$recurringaction=="inicjalizujące"),]
+# Usunięcie mieszanych kart
 proba_uczaca <- proba_uczaca[!(proba_uczaca$level=="CLASSIC/GOLD" | proba_uczaca$level=="GOLD/PLATINUM" | proba_uczaca$level=="GOLD/STANDARD" | proba_uczaca$level=="INFINITE/SIGNATURE" | proba_uczaca$level=="STANDARD/GOLD") | proba_uczaca$level=="STANDARD/WORLD",]
-table(proba_uczaca$level)
 
 ```
 
 ```{r recode, echo=FALSE}
-table(proba_uczaca$recurringaction)
-proba_uczaca$countrycode <- recode(proba_uczaca$countrycode, "PL"="PL", .default = "other")
-proba_uczaca$status <- recode(proba_uczaca$status, "completed successfully"="success", .default = "failed")
+proba_uczaca$description[is.na(proba_uczaca$description)] <- ""
+#proba_uczaca$countrycode <- recode(proba_uczaca$countrycode, "PL"="PL", .default = "other")
+proba_uczaca$status <- recode(proba_uczaca$status, "completed successfully"="sukces", .default = "porażka")
 proba_uczaca$issuer <- recode(proba_uczaca$issuer, "VISA"="VISA", .default = "MASTERCARD")
 proba_uczaca$recurringaction <- recode(proba_uczaca$recurringaction, "AUTO"="rekurencyjne", .default = "inicjalizujące")
+# Usunięcie tranzakcji inicjalizujących z bazy
+proba_uczaca <- proba_uczaca[!(proba_uczaca$recurringaction=="inicjalizujące"),]
 proba_uczaca$level <- recode(proba_uczaca$level,
                              "WORLD"="WORLD","WORLD BLACK"="WORLD", "WORLD ELITE"="WORLD","WORLD BLACK EDITION"="WORLD","NEW WORLD"="WORLD",
                              "STANDARD"="STANDARD","STANDARD UNEMBOSSED"="STANDARD","CLASSIC"="STANDARD"," ELECTRON"="STANDARD",
@@ -161,17 +140,73 @@ proba_uczaca$description <- recode(proba_uczaca$description,
                              "platnosci za faktury za tv internet telefon"="Telekomunikacja","Orange Flex"="Telekomunikacja", "Orange On-line:"="Telekomunikacja","PLAY - FAKTURA"="Telekomunikacja","RedBull Mobile - FAKTURA"="Telekomunikacja",
                              "iTaxi"="Transport","Przejazd A4Go"="Transport",
                              .default = "inne")
+
 proba_uczaca$day_of_week_createtime <- recode(proba_uczaca$day_of_week_createtime,
                                               "poniedziałek" = "poniedziałek", "wtorek" = "wtorek",
                                               "środa" = "środa", "czwartek" = "czwartek",
                                               "piątek" = "piątek", .default = "weekend")
 
-create_plot(proba_uczaca$description)
-#todo do pogrupowania
-table(proba_uczaca$description)
+proba_uczaca$month_createtime <- recode(proba_uczaca$month_createtime,
+                                              "styczeń" = "I kwartał", "luty" = "I kwartał",
+                                              "marzec" = "I kwartał", "kwiecień" = "II kwartał",
+                                              "maj" = "II kwartał","czerwiec" = "II kwartał","lipiec" = "III kwartał","sierpień" = "III kwartał","wrzesień" = "III kwartał", .default = "IV kwartał")
 ```
 
+## Zbiór danych po grupowaniu zmiennych
+```{r data_presetation}
+create_plot <- function(variable) {
+  ggplot(proba_uczaca , aes(x=factor(variable), fill=factor(variable))) + 
+    geom_bar() +
+    theme(legend.position="none",axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  
+}
 
+
+create_plot(proba_uczaca$issuer)
+table(proba_uczaca$issuer)
+
+create_plot(proba_uczaca$mccname)
+table(proba_uczaca$mccname)
+
+create_plot(proba_uczaca$recurringaction)
+table(proba_uczaca$recurringaction)
+
+create_plot(proba_uczaca$type)
+table(proba_uczaca$type)
+
+create_plot(proba_uczaca$description)
+table(proba_uczaca$description)
+
+create_plot(proba_uczaca$level)
+table(proba_uczaca$level)
+
+create_plot(proba_uczaca$status)
+table(proba_uczaca$status)
+
+#create_plot(proba_uczaca$countrycode)
+#table(proba_uczaca$countrycode)
+
+create_plot(proba_uczaca$listtype)
+table(proba_uczaca$listtype)
+
+create_plot(proba_uczaca$acquirerconnectionmethod)
+table(proba_uczaca$acquirerconnectionmethod)
+
+create_plot(proba_uczaca$day_of_week_createtime)
+table(proba_uczaca$day_of_week_createtime)
+
+create_plot(proba_uczaca$month_createtime)
+table(proba_uczaca$month_createtime)
+
+create_plot(proba_uczaca$expirydate)
+table(proba_uczaca$expirydate)
+
+create_plot(proba_uczaca$year_createtime)
+table(proba_uczaca$year_createtime)
+
+## Usuwanie niepotrzebnych kolumn
+proba_uczaca <- subset(proba_uczaca, select = -c(browseragent, screenheight, screenwidth,payclickedtime,id,initialtransaction_id,expirymonth,expiryyear,createtime,countrycode,listtype))
+```
 
 
 
@@ -223,13 +258,55 @@ rpart.plot(drz.veh.p)
 ```
 
 ```{r tree_describe NA, echo=FALSE,  message = FALSE, warning = FALSE}
+# rpart.rules(
+#   x = drz.veh.p,
+#   style = "tallw"
+# )
+# levels(proba_uczaca$status)
+# reguly <- rpart.rules(x= drz.veh.p)
+# 
+# summary(drz.veh.p)
+```
 
-rpart.rules(
-  x = drz.veh.p,
-  style = "tallw"
-)
-levels(proba_uczaca$status)
-reguly <- rpart.rules(x= drz.veh.p)
 
-summary(drz.veh.p)
+## Drzewo regresyjne
+```{r}
+# Model drzewa regresyjnego
+drzewo_przeuczone <- rpart(
+  formula = amount ~.,
+  data= proba_uczaca,
+  )
+
+dim(drzewo_przeuczone$cptable)
+
+# Narysować wykres drzewa
+rpart.plot(drzewo_przeuczone
+           ,branch.type = 5)
+rpart.rules(drzewo_przeuczone,style="tallw")
+# Przestudiować proces budowy drzewa
+summary(drzewo_przeuczone)
+# Odczytać ważność zmiennych
+cbind(drzewo$variable.importance *100 / ss(gd$WYD))
+# Ustalić optymalną wielkość drzewa na podstawie sprawdzania krzyżowego
+przycinanie <- function(drzewo) {
+  bledy <- drzewo$cptable
+  tmp1 <- which.min(bledy[, "xerror"])  # min błąd w sprawdzaniu krzyżowym
+  tmp2 <- sum(bledy[tmp1, c("xerror", "xstd")]) # min błąd + odchylenie standardowe
+  optymalny <- which(bledy[, "xerror"] < tmp2)[1] # nr optymalnego drzewa
+  
+  prune(drzewo, cp = bledy[optymalny, "CP"]) # przycięcie drzewa
+}
+# Ocenić dokładność modelu
+
+drzewo_przyciete <- przycinanie(drzewo_przeuczone)
+drzewo_przyciete$cptable
+
+predykcje <- predict(drzewo_przyciete)
+
+mean((gd$WYD - predykcje)^2)^0.5
+
+
+plot(x=gd$WYD,y=predykcje)
+
+table(predykcje)
 ```
