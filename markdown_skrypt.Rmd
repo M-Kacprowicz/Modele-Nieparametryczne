@@ -101,12 +101,24 @@ missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
                           numbers=TRUE, sortVars=TRUE,
                           labels=names(proba_uczaca), cex.axis=.7,
                           gap=3, ylab=c("Missing data","Pattern"))
-
-
-
-
 ```
-# Sprawdzanie braków danych po usunięciu niepotrzebnych kolumn
+
+# Imputacja braków danych w zmiennych `browseragent` oraz `initialtransaction_id`
+```{r}
+for (i in 1:nrow(proba_uczaca)){
+  if (is.na(proba_uczaca[i,]$browseragent) == TRUE){
+    proba_uczaca[i,]$browseragent <- proba_uczaca[which(proba_uczaca$id == proba_uczaca[i,]$initialtransaction_id),]$browseragent
+  }
+}
+
+for (i in 1:nrow(proba_uczaca)){
+  if (proba_uczaca[i,]$recurringaction != "AUTO"){
+    proba_uczaca[i,]$initialtransaction_id <- proba_uczaca[i,]$id
+  }
+}
+```
+
+# Sprawdzanie braków danych po imputacji danych
 ```{r}
 missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
                           numbers=TRUE, sortVars=TRUE,
@@ -115,12 +127,13 @@ missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
 
 ```
 
+# Usunięcie mieszanych kart w zmiennej `level` ze względu na niewielką ilośc rekordów z takimi wariantami oraz niemożliwości przydzielenia ich do jednej konkretnej kategorii
 ```{r remove all NA}
-# Usunięcie mieszanych kart
 proba_uczaca <- proba_uczaca[!(proba_uczaca$level=="CLASSIC/GOLD" | proba_uczaca$level=="GOLD/PLATINUM" | proba_uczaca$level=="GOLD/STANDARD" | proba_uczaca$level=="INFINITE/SIGNATURE" | proba_uczaca$level=="STANDARD/GOLD") | proba_uczaca$level=="STANDARD/WORLD",]
 
 ```
 
+# Recode wartości zmiennych
 ```{r recode, echo=FALSE}
 proba_uczaca$description[is.na(proba_uczaca$description)] <- ""
 #proba_uczaca$countrycode <- recode(proba_uczaca$countrycode, "PL"="PL", .default = "other")
@@ -146,10 +159,29 @@ proba_uczaca$day_of_week_createtime <- recode(proba_uczaca$day_of_week_createtim
                                               "środa" = "środa", "czwartek" = "czwartek",
                                               "piątek" = "piątek", .default = "weekend")
 
-proba_uczaca$month_createtime <- recode(proba_uczaca$month_createtime,
+proba_uczaca$quarter_createtime <- recode(proba_uczaca$month_createtime,
                                               "styczeń" = "I kwartał", "luty" = "I kwartał",
                                               "marzec" = "I kwartał", "kwiecień" = "II kwartał",
                                               "maj" = "II kwartał","czerwiec" = "II kwartał","lipiec" = "III kwartał","sierpień" = "III kwartał","wrzesień" = "III kwartał", .default = "IV kwartał")
+```
+
+# Usuwanie kolumn uznanych za nieistotne dla modelu predykcyjnego/klasyfikującego
+```{r}
+proba_uczaca <- subset(proba_uczaca, select = -c(screenheight, screenwidth,payclickedtime,expirymonth,expiryyear,createtime,countrycode,listtype, browseragent, id, initialtransaction_id))
+```
+
+# Sprawdzanie braków danych po obróbce danych
+```{r}
+missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
+                          numbers=TRUE, sortVars=TRUE,
+                          labels=names(proba_uczaca), cex.axis=.7,
+                          gap=3, ylab=c("Missing data","Pattern"))
+
+```
+
+# Usunięcie zmiennej `month_createtime`, ponieważ została ona zamieniona na `quarter_createtime`
+```{r}
+proba_uczaca <- subset(proba_uczaca, select = -c(month_createtime))
 ```
 
 ## Zbiór danych po grupowaniu zmiennych
@@ -186,8 +218,8 @@ table(proba_uczaca$status)
 #create_plot(proba_uczaca$countrycode)
 #table(proba_uczaca$countrycode)
 
-create_plot(proba_uczaca$listtype)
-table(proba_uczaca$listtype)
+#create_plot(proba_uczaca$listtype)
+#table(proba_uczaca$listtype)
 
 create_plot(proba_uczaca$acquirerconnectionmethod)
 table(proba_uczaca$acquirerconnectionmethod)
@@ -195,7 +227,7 @@ table(proba_uczaca$acquirerconnectionmethod)
 create_plot(proba_uczaca$day_of_week_createtime)
 table(proba_uczaca$day_of_week_createtime)
 
-create_plot(proba_uczaca$month_createtime)
+create_plot(proba_uczaca$quarter_createtime)
 table(proba_uczaca$month_createtime)
 
 create_plot(proba_uczaca$expirydate)
@@ -203,40 +235,29 @@ table(proba_uczaca$expirydate)
 
 create_plot(proba_uczaca$year_createtime)
 table(proba_uczaca$year_createtime)
-
-## Usuwanie niepotrzebnych kolumn
-proba_uczaca <- subset(proba_uczaca, select = -c(browseragent, screenheight, screenwidth,payclickedtime,id,initialtransaction_id,expirymonth,expiryyear,createtime,countrycode,listtype))
 ```
 
-
-
-```{r}
-proba_uczaca_removed_na <- na.omit(proba_uczaca)
-```
-
-
-
+#Utworzenie drzewa klasyfikacyjnego dla zmiennej `status`
 ```{r tree_classifier NA}
 drzewo <- rpart(
   formula = status ~ .,
   data = proba_uczaca,
 )
 
-```
-
-```{r}
-
 drzewo
 
-
 summary(drzewo)
-# Narysować wykres drzewa
+```
+
+# Rysunek drzewa klasyfikacyjnego uproszczonego dla zmiennej `status`
+```{r}
 rpart.plot(x= drzewo,
            box.palette = "Red",
            branch.type = 5)
 ```
-```{r}
 
+# Utworzenie pełnego drzewa klasyfikacyjnego dla zmiennej `status`
+```{r}
 drzewo.duze <- rpart(
   formula = status ~ .,
   data = proba_uczaca,
@@ -244,8 +265,8 @@ drzewo.duze <- rpart(
 )
 ```
 
+# Rysunek pełnego drzewa klasyfikacyjnego dla zmiennej `status` oraz drzewa optymalnego
 ```{r}
-
 bledy <- drzewo.duze$cptable
 rpart.plot(x=drzewo.duze)
 
