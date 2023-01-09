@@ -40,6 +40,10 @@ create_plot <- function(variable) {
   
 }
 
+proba_uczaca$day_of_week_createtime <- weekdays(proba_uczaca$createtime, abbreviate = FALSE)
+proba_uczaca$month_createtime <- months(proba_uczaca$createtime, abbreviate = FALSE)
+
+
 create_plot(proba_uczaca$expiryyear)
 table(proba_uczaca$expiryyear)
 
@@ -75,6 +79,12 @@ table(proba_uczaca$listtype)
 
 create_plot(proba_uczaca$acquirerconnectionmethod)
 table(proba_uczaca$acquirerconnectionmethod)
+
+create_plot(proba_uczaca$day_of_week_createtime)
+table(proba_uczaca$day_of_week_createtime)
+
+create_plot(proba_uczaca$month_createtime)
+table(proba_uczaca$month_createtime)
 
 #TODO zastanowić się nad podziałem createtime np : kwartalnie lub miesięcznie
 ggplot(proba_uczaca, aes(x=createtime)) + 
@@ -142,6 +152,10 @@ proba_uczaca$description <- recode(proba_uczaca$description,
                              "platnosci za faktury za tv internet telefon"="Telekomunikacja","Orange Flex"="Telekomunikacja", "Orange On-line:"="Telekomunikacja","PLAY - FAKTURA"="Telekomunikacja","RedBull Mobile - FAKTURA"="Telekomunikacja",
                              "iTaxi"="Transport","Przejazd A4Go"="Transport",
                              .default = "inne")
+proba_uczaca$day_of_week_createtime <- recode(proba_uczaca$day_of_week_createtime,
+                                              "poniedziałek" = "poniedziałek", "wtorek" = "wtorek",
+                                              "środa" = "środa", "czwartek" = "czwartek",
+                                              "piątek" = "piątek", .default = "weekend")
 
 create_plot(proba_uczaca$description)
 #todo do pogrupowania
