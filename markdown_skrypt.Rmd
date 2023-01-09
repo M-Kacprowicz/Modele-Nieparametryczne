@@ -104,6 +104,7 @@ missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
 
 
 
+
 ```
 # Sprawdzanie braków danych po usunięciu niepotrzebnych kolumn
 ```{r}
@@ -117,6 +118,7 @@ missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
 ```{r remove all NA}
 # Usunięcie mieszanych kart
 proba_uczaca <- proba_uczaca[!(proba_uczaca$level=="CLASSIC/GOLD" | proba_uczaca$level=="GOLD/PLATINUM" | proba_uczaca$level=="GOLD/STANDARD" | proba_uczaca$level=="INFINITE/SIGNATURE" | proba_uczaca$level=="STANDARD/GOLD") | proba_uczaca$level=="STANDARD/WORLD",]
+
 ```
 
 ```{r recode, echo=FALSE}
@@ -207,6 +209,7 @@ proba_uczaca <- subset(proba_uczaca, select = -c(browseragent, screenheight, scr
 ```
 
 
+
 ```{r}
 proba_uczaca_removed_na <- na.omit(proba_uczaca)
 ```
@@ -255,7 +258,6 @@ rpart.plot(drz.veh.p)
 ```
 
 ```{r tree_describe NA, echo=FALSE,  message = FALSE, warning = FALSE}
-
 # rpart.rules(
 #   x = drz.veh.p,
 #   style = "tallw"
@@ -284,7 +286,6 @@ rpart.rules(drzewo_przeuczone,style="tallw")
 # Przestudiować proces budowy drzewa
 summary(drzewo_przeuczone)
 # Odczytać ważność zmiennych
-cbind(drzewo$variable.importance)
 cbind(drzewo$variable.importance *100 / ss(gd$WYD))
 # Ustalić optymalną wielkość drzewa na podstawie sprawdzania krzyżowego
 przycinanie <- function(drzewo) {
