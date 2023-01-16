@@ -20,6 +20,14 @@ library("dplyr")
 library("tidyr")
 library("lubridate")
 library("ggplot2")
+library(DAAG)
+library(party)
+library(rpart)
+library(rpart.plot)
+library(mlbench)
+library(caret)
+library(pROC)
+library(tree)
 # Ładowanie danych
 
 load(file="dane_zaliczenie.RData")
@@ -32,7 +40,6 @@ load(file="dane_zaliczenie.RData")
 proba_uczaca$day_of_week_createtime <- weekdays(proba_uczaca$createtime, abbreviate = FALSE)
 proba_uczaca$month_createtime <- months(proba_uczaca$createtime, abbreviate = FALSE)
 proba_uczaca$year_createtime <- year(proba_uczaca$createtime)
-
 proba_uczaca$expirydate <- as.integer(paste0(proba_uczaca$expiryyear,proba_uczaca$expirymonth))
 ```
 
@@ -211,10 +218,17 @@ proba_uczaca <- subset(proba_uczaca, select = -c(browseragent, screenheight, scr
 
 
 ```{r}
-proba_uczaca_removed_na <- na.omit(proba_uczaca)
+# Sprawdzić czy wywalenie tych zmiennych pomaga w robieniu modelu
+
+#proba_uczaca <- subset(proba_uczaca, select = -c(year_createtime,expirydate,day_of_week_createtime,month_createtime))
+#proba_uczaca_removed_na <- na.omit(proba_uczaca)
 ```
 
-
+```{r}
+ind <- sample(2, nrow(proba_uczaca), replace = T, prob = c(0.8, 0.2))
+proba_uczaca <- proba_uczaca[ind == 1,]
+proba_walidacyjna <- proba_uczaca[ind == 2,]
+```
 
 ```{r tree_classifier NA}
 drzewo <- rpart(
@@ -244,18 +258,8 @@ drzewo.duze <- rpart(
 )
 ```
 
-```{r}
 
-bledy <- drzewo.duze$cptable
-rpart.plot(x=drzewo.duze)
 
-nr.min.cp <- which.min(bledy[, "xerror"])  # numer min cp w sprawdzaniu krzyżowym
-tmp2 <- sum(bledy[nr.min.cp, c("xerror", "xstd")]) # min błąd + odchylenie standardowe
-optymalny <- which(bledy[, "xerror"] < tmp2)[1] # nr optymalnego drzewa
-
-drz.veh.p <- prune(drzewo.duze, cp = bledy[optymalny, "CP"]) # przycięcie drzewa
-rpart.plot(drz.veh.p)
-```
 
 ```{r tree_describe NA, echo=FALSE,  message = FALSE, warning = FALSE}
 # rpart.rules(
@@ -268,6 +272,12 @@ rpart.plot(drz.veh.p)
 # summary(drz.veh.p)
 ```
 
+```{r}
+
+predicted = predict(drzewo.duze,proba_walidacyjna, type ="class")
+predicted_simple = predict(drzewo,proba_walidacyjna, type ="class")
+confusionMatrix(predicted_simple, proba_walidacyjna$status, positive="porażka")
+```
 
 ## Drzewo regresyjne
 ```{r}
