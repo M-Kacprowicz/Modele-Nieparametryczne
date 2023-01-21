@@ -113,6 +113,7 @@ proba_uczaca$time_to_expire_result <- round(as.integer(difftime(proba_uczaca$tim
 
 ```
 
+
 ## Surowy zbiór danych
 ```{r data_presetation}
 # create_plot <- function(variable) {
@@ -175,7 +176,11 @@ proba_uczaca$time_to_expire_result <- round(as.integer(difftime(proba_uczaca$tim
 
 # Usunięcie mieszanych kart
 
+
 ```{r}
+
+
+
 
 proba_uczaca <- proba_uczaca[!(proba_uczaca$level=="CLASSIC/GOLD" | proba_uczaca$level=="GOLD/PLATINUM" | proba_uczaca$level=="GOLD/STANDARD" | proba_uczaca$level=="INFINITE/SIGNATURE" | proba_uczaca$level=="STANDARD/GOLD") | proba_uczaca$level=="STANDARD/WORLD",]
 # Powtórzenie czynności - r niestety nie jest w stanie wykonać powyższego polecenia w pełni
@@ -183,6 +188,7 @@ proba_uczaca <- proba_uczaca[!(proba_uczaca$level=="STANDARD/WORLD"),]
 
 ```
 
+# Recode wartości zmiennych
 ```{r recode, echo=FALSE}
 proba_uczaca$description[is.na(proba_uczaca$description)] <- ""
 
@@ -235,17 +241,20 @@ proba_uczaca$day_of_week_createtime <- recode(proba_uczaca$day_of_week_createtim
                                               "środa" = "środa", "czwartek" = "czwartek",
                                               "piątek" = "piątek", .default = "weekend")
 
-proba_uczaca$month_createtime <- recode(proba_uczaca$month_createtime,
+proba_uczaca$quarter_createtime <- recode(proba_uczaca$month_createtime,
                                               "styczeń" = "I kwartał", "luty" = "I kwartał",
                                               "marzec" = "I kwartał", "kwiecień" = "II kwartał",
                                               "maj" = "II kwartał","czerwiec" = "II kwartał","lipiec" = "III kwartał","sierpień" = "III kwartał","wrzesień" = "III kwartał", .default = "IV kwartał")
+
 
 table(proba_uczaca$status)
 proba_uczaca$status = relevel(proba_uczaca$status,ref = "sukces")
 table(proba_uczaca$status)
 
 
+
 ```
+
 
 ## Przedstawienie brakujących danych
 
@@ -255,7 +264,9 @@ missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
                           labels=names(proba_uczaca), cex.axis=.7,
                           gap=3, ylab=c("Missing data","Pattern"))
 
+
 ```
+
 
 ## Zbiór danych po grupowaniu zmiennych
 ```{r data_presetation}
@@ -309,6 +320,7 @@ missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
 # create_plot(proba_uczaca$year_createtime)
 # table(proba_uczaca$year_createtime)
 
+
 ```
 
 ```{r}
@@ -331,25 +343,27 @@ proba_uczaca <- proba_uczaca[ind == 1,]
 proba_walidacyjna <- proba_uczaca[ind == 2,]
 ```
 
+
+
 ```{r tree_classifier NA}
 drzewo <- rpart(
   formula = status ~ .,
   data = proba_uczaca,
 )
 
-```
-
-```{r}
-
 drzewo
 
+
 # Narysować wykres drzewa
+
+
 rpart.plot(x= drzewo,
            box.palette = "Red",
            branch.type = 5)
 ```
-```{r}
 
+# Utworzenie pełnego drzewa klasyfikacyjnego dla zmiennej `status`
+```{r}
 drzewo.duze <- rpart(
   formula = status ~ .,
   data = proba_uczaca,
@@ -358,9 +372,8 @@ drzewo.duze <- rpart(
 ```
 
 
-
-
 ```{r tree_describe NA, echo=FALSE,  message = FALSE, warning = FALSE}
+
 bledy <- drzewo.duze$cptable
 
 nr.min.cp <- which.min(bledy[, "xerror"])  # numer min cp w sprawdzaniu krzyżowym
