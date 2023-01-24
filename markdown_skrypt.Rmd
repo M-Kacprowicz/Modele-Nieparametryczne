@@ -37,8 +37,8 @@ library(Metrics)
 # Ładowanie danych
 
 load(file="dane_zaliczenie.RData")
-
-
+table(proba_testowa$recurringaction)
+head(proba_uczaca)
 ```
 
 # Imputacja browser - Uczący
@@ -71,31 +71,19 @@ proba_uczaca = readRDS(file = "C:/Users/modze/Desktop/UG semsetr2/Modele niepara
 
 # Imputacja browser - Testowy
 ```{r}
-# proba_testowa$initialtransaction_id[is.na(proba_testowa$initialtransaction_id)] <- proba_testowa$id[is.na(proba_testowa$initialtransaction_id)]
-#  
-#  for (i in 1:nrow(proba_testowa)){
-#    if (is.na(proba_testowa[i,]$browseragent) == TRUE){
-#      proba_testowa[i,]$browseragent <- proba_testowa[which(proba_testowa$id == proba_testowa[i,]$initialtransaction_id),]$browseragent
-#    }
-#  }
-#  
-# 
-#  temp <- proba_testowa[proba_testowa$browseragent=="Fotka-android",]
-#  proba_testowa <- proba_testowa[!(proba_testowa$browseragent=="Fotka-android"),]
-#  browser <- proba_testowa$browseragent
-#  browser_sub <- strsplit(browser,"[(]")
-#  browser_sub <- sapply(browser_sub,'[[',2)
-#  browser_sub <- strsplit(browser_sub,"[;]")
-#  browser_sub <-sapply(browser_sub,'[[',1)
-#  proba_testowa$browseragent <- browser_sub
-#  
-#  proba_testowa <- rbind(proba_testowa, temp)
-#  table(proba_testowa$browseragent)
-# 
-# saveRDS(proba_testowa, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/proba_testowa.rda")
-
- proba_testowa = readRDS(file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/proba_testowa.rda")
+proba_testowa = readRDS(file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/proba_testowa.rda")
 ```
+
+## Tworzenie nowych zmiennych - Próba Testowa
+```{r}
+proba_testowa$day_of_week_createtime <- weekdays(proba_testowa$createtime, abbreviate = FALSE)
+proba_testowa$month_createtime <- months(proba_testowa$createtime, abbreviate = FALSE)
+proba_testowa$year_createtime <- year(proba_testowa$createtime)
+proba_testowa$time_to_expire <-paste0(as.character(proba_testowa$expiryyear),"-",as.character(proba_testowa$expirymonth),"-", '01')
+proba_testowa$time_to_expire_result <- round(as.integer(difftime(proba_testowa$time_to_expire,proba_testowa$createtime,units = "weeks")))
+
+```
+
 
 ## Tworzenie nowych zmiennych - Próba Ucząca
 ```{r}
@@ -106,15 +94,9 @@ proba_uczaca$time_to_expire <-paste0(as.character(proba_uczaca$expiryyear),"-",a
 proba_uczaca$time_to_expire_result <- round(as.integer(difftime(proba_uczaca$time_to_expire,proba_uczaca$createtime,units = "weeks")))
 
 ```
-## Tworzenie nowych zmiennych - Próba Testowa
-```{r}
-proba_testowa$day_of_week_createtime <- weekdays(proba_testowa$createtime, abbreviate = FALSE)
-proba_testowa$month_createtime <- months(proba_testowa$createtime, abbreviate = FALSE)
-proba_testowa$year_createtime <- year(proba_testowa$createtime)
-proba_testowa$time_to_expire <-paste0(as.character(proba_testowa$expiryyear),"-",as.character(proba_testowa$expirymonth),"-", '01')
-proba_testowa$time_to_expire_result <- round(as.integer(difftime(proba_testowa$time_to_expire,proba_testowa$createtime,units = "weeks")))
 
-```
+
+
 
 ## Surowy zbiór danych
 ```{r data_presetation}
@@ -200,15 +182,6 @@ proba_uczaca <- filter(proba_uczaca,(amount > Tmin & amount < Tmax))
 ```{r recode_uczacy, echo=FALSE}
 
 
-
-
-proba_uczaca <- proba_uczaca[!(proba_uczaca$level=="CLASSIC/GOLD" | proba_uczaca$level=="GOLD/PLATINUM" | proba_uczaca$level=="GOLD/STANDARD" | proba_uczaca$level=="INFINITE/SIGNATURE" | proba_uczaca$level=="STANDARD/GOLD") | proba_uczaca$level=="STANDARD/WORLD",]
-# Powtórzenie czynności - r niestety nie jest w stanie wykonać powyższego polecenia w pełni
-proba_uczaca <- proba_uczaca[!(proba_uczaca$level=="STANDARD/WORLD"),]
-
-
-
-
 proba_uczaca$description[is.na(proba_uczaca$description)] <- ""
 
 proba_uczaca$description <- recode(proba_uczaca$description,
@@ -263,16 +236,34 @@ proba_uczaca$recurringaction <- recode(proba_uczaca$recurringaction, "AUTO"="rek
 
 # Usunięcie tranzakcji inicjalizujących z bazy
 proba_uczaca <- proba_uczaca[!(proba_uczaca$recurringaction=="inicjalizujące"),]
-table(proba_uczaca$level)
-proba_uczaca$level <- recode(proba_uczaca$level,
-                             "WORLD"="WORLD","WORLD BLACK"="WORLD", "WORLD ELITE"="WORLD","WORLD BLACK EDITION"="WORLD","NEW WORLD"="WORLD",
-                             "STANDARD"="STANDARD","STANDARD UNEMBOSSED"="STANDARD","CLASSIC"="STANDARD"," ELECTRON"="STANDARD",
-                             "GOLD"="GOLD",
-                             "PREPAID"="PREPAID","PREPAID PLATINUM"="PREPAID","PREPAID RELOADABLE"="PREPAID",
-                             "BUSINESS"="BUSINESS","CORPORATE T&E"="BUSINESS",
-                             .default = "other")
 
-table(proba_uczaca$level)
+
+proba_uczaca$level <- recode(proba_uczaca$level,
+                           "WORLD"="WORLD",
+                             "PLATINUM"="WORLD",
+                             "TITANIUM"="WORLD",
+                             "WORLD BLACK"="WORLD",
+                             "WORLD ELITE"="WORLD",
+                             "WORLD BLACK EDITION"="WORLD",
+                             "NEW WORLD"="WORLD",
+                             "STANDARD"="STANDARD",
+                             "STANDARD UNEMBOSSED"="STANDARD",
+                             "CLASSIC"="STANDARD",
+                             "PERSONAL"="STANDARD",
+                             "ELECTRON"="STANDARD",
+                             "GOLD"="GOLD", 
+                             "SIGNATURE"="GOLD",
+                             "PREPAID BUSINESS"="PREPAID",
+                             "PREPAID"="PREPAID",
+                             "PREPAID PLATINUM"="PREPAID",
+                             "PREPAID RELOADABLE"="PREPAID",
+                             "REWARDS"="PREPAID",
+                             "BUSINESS"="BUSINESS",
+                             "CORPORATE T&E"="BUSINESS",
+                             "CORPORATE"="BUSINESS",
+                              .default = "Inne"
+                           )
+
 
 proba_uczaca$day_of_week_createtime <- recode(proba_uczaca$day_of_week_createtime,
                                               "poniedziałek" = "poniedziałek", "wtorek" = "wtorek",
@@ -294,12 +285,8 @@ proba_uczaca <- proba_uczaca %>% select(-c(screenheight, screenwidth,payclickedt
 
 ```
 # Recode Testowy
-```{r recode_testowy, echo=FALSE}
-proba_testowa <- proba_testowa[!(proba_testowa$level=="CLASSIC/GOLD" | proba_testowa$level=="GOLD/PLATINUM" | proba_testowa$level=="GOLD/STANDARD" | proba_testowa$level=="INFINITE/SIGNATURE" | proba_testowa$level=="STANDARD/GOLD") | proba_testowa$level=="STANDARD/WORLD",]
-# Powtórzenie czynności - r niestety nie jest w stanie wykonać powyższego polecenia w pełni
-proba_testowa <- proba_testowa[!(proba_testowa$level=="STANDARD/WORLD"),]
 
-
+```{r recode_uczacy, echo=FALSE}
 
 proba_testowa$description[is.na(proba_testowa$description)] <- ""
 
@@ -335,8 +322,10 @@ proba_testowa$browseragent <- recode(proba_testowa$browseragent,
                              "PlayStation 4 7.51) AppleWebKit/605.1.15"="PS4",
                              "SMART-TV"="Smart-tv",
                              .default = "Windows")
-table(proba_testowa$browseragent)
+
+
 proba_testowa$countrycode <- recode(proba_testowa$countrycode, "PL"="PL", .default = "other")
+
 
 proba_testowa$issuer <- recode(proba_testowa$issuer, "VISA"="VISA", .default = "MASTERCARD")
 
@@ -347,22 +336,41 @@ proba_testowa$mccname <- recode(proba_testowa$mccname, "NULL"="Inne",
                                "Sieci komputerowe usługi informacyjne"="IT",
                                )
 
-proba_testowa$recurringaction <- recode(proba_testowa$recurringaction, "AUTO"="rekurencyjne", .default = "inicjalizujące")
+proba_testowa$recurringaction <- recode(proba_testowa$recurringaction, "AUTO"="rekurencyjne","MANUAL"="rekurencyjne", .default = "inicjalizujące")
 
+proba_testowa <- proba_testowa[!(proba_testowa$recurringaction=="inicjalizujące"),]
 
 
 # Usunięcie tranzakcji inicjalizujących z bazy
-proba_testowa <- proba_testowa[!(proba_testowa$recurringaction=="inicjalizujące"),]
-table(proba_testowa$level)
-proba_testowa$level <- recode(proba_testowa$level,
-                             "WORLD"="WORLD","WORLD BLACK"="WORLD", "WORLD ELITE"="WORLD","WORLD BLACK EDITION"="WORLD","NEW WORLD"="WORLD",
-                             "STANDARD"="STANDARD","STANDARD UNEMBOSSED"="STANDARD","CLASSIC"="STANDARD"," ELECTRON"="STANDARD",
-                             "GOLD"="GOLD",
-                             "PREPAID"="PREPAID","PREPAID PLATINUM"="PREPAID","PREPAID RELOADABLE"="PREPAID",
-                             "BUSINESS"="BUSINESS","CORPORATE T&E"="BUSINESS",
-                             .default = "other")
 
-table(proba_testowa$level)
+
+proba_testowa$level <- recode(proba_testowa$level,
+                             "WORLD"="WORLD",
+                             "PLATINUM"="WORLD",
+                             "TITANIUM"="WORLD",
+                             "WORLD BLACK"="WORLD",
+                             "WORLD ELITE"="WORLD",
+                             "WORLD BLACK EDITION"="WORLD",
+                             "NEW WORLD"="WORLD",
+                             "STANDARD"="STANDARD",
+                             "STANDARD UNEMBOSSED"="STANDARD",
+                             "CLASSIC"="STANDARD",
+                             "PERSONAL"="STANDARD",
+                             "ELECTRON"="STANDARD",
+                             "GOLD"="GOLD", 
+                             "SIGNATURE"="GOLD",
+                             "PREPAID BUSINESS"="PREPAID",
+                             "PREPAID"="PREPAID",
+                             "PREPAID PLATINUM"="PREPAID",
+                             "PREPAID RELOADABLE"="PREPAID",
+                             "REWARDS"="PREPAID",
+                             "BUSINESS"="BUSINESS",
+                             "CORPORATE T&E"="BUSINESS",
+                             "CORPORATE"="BUSINESS",
+                              .default = "Inne"
+                             )
+
+
 
 proba_testowa$day_of_week_createtime <- recode(proba_testowa$day_of_week_createtime,
                                               "poniedziałek" = "poniedziałek", "wtorek" = "wtorek",
@@ -374,13 +382,18 @@ proba_testowa$month_createtime <- recode(proba_testowa$month_createtime,
                                               "marzec" = "I kwartał", "kwiecień" = "II kwartał",
                                               "maj" = "II kwartał","czerwiec" = "II kwartał","lipiec" = "III kwartał","sierpień" = "III kwartał","wrzesień" = "III kwartał", .default = "IV kwartał")
 
+table(proba_testowa$recurringaction)
 
-## Usuwanie zmiennych
-
-proba_testowa <- proba_testowa %>% select(-c(screenheight, screenwidth,payclickedtime,id,initialtransaction_id,expirymonth,expiryyear,time_to_expire,createtime,recurringaction))
-
+proba_testowa <- proba_testowa %>% select(-c(screenheight, screenwidth,payclickedtime,initialtransaction_id,expirymonth,expiryyear,time_to_expire,createtime))
 
 
+
+```
+```{r}
+# test <- cbind(proba_testowa$id)
+# test1 <- cbind(predykcje_testowa$id)
+# 
+# setdiff(test1,test)
 ```
 
 
@@ -492,6 +505,7 @@ rpart.plot(x= drzewo,
             nn = TRUE,
            extra = 104
                       )
+summary(proba_uczaca)
 
 # Podsumowanie drzewa
 rpart.rules(
@@ -501,7 +515,7 @@ rpart.rules(
 summary(drzewo)
 
 # Przewidywanie
-predicted_simple <- predict(drzewo, proba_testowa, type = "class")
+predicted_simple <- predict(drzewo, proba_walidacyjna, type = "class")
 
 confusionMatrix(predicted_simple, proba_walidacyjna$status, positive = "sukces")
 ```
@@ -568,7 +582,9 @@ cbind(drzewo.przyciete$variable.importance)
 ## MARS
 ```{r}
 # Model MARS dla amount
-sum(is.na(proba_uczaca))
+
+# Nie działa dla testowej próby
+proba_uczaca <- proba_uczaca %>% select(-c(status))
 
 mars1 <- earth(amount ~ .,
                data = proba_uczaca)
@@ -662,17 +678,17 @@ summary(mars4)
 plot(mars4, info = T)
 
 # Sprawdzić jaka byłaby optymalna liczba składników (terms) na podstawie sprawdzania krzyżowego
-mars5 <- earth(formula = amount ~ .,
-               data = proba_uczaca,
-               degree = 3,
-               nk = 150,
-               thresh = 0.0001,
-               minspan = 2,
-               trace = 3,
-               pmethod = "cv", # sprawdzanie krzyżowe
-               nfold = 10,  # liczba części w sprawdzaniu krzyżowym
-               ncross = 1, # ile razy wykonać cv (większa wartość = stabilniejsze wyniki)
-               keepxy = T) # zachowanie danych x i y, żeby na wykresach diagnostycznych było cv
+# mars5 <- earth(formula = amount ~ .,
+#                data = proba_uczaca,
+#                degree = 3,
+#                nk = 150,
+#                thresh = 0.0001,
+#                minspan = 2,
+#                trace = 3,
+#                pmethod = "cv", # sprawdzanie krzyżowe
+#                nfold = 10,  # liczba części w sprawdzaniu krzyżowym
+#                ncross = 1, # ile razy wykonać cv (większa wartość = stabilniejsze wyniki)
+#                keepxy = T) # zachowanie danych x i y, żeby na wykresach diagnostycznych było cv
 # terms 23
 
 plot(mars5, which = 1)
@@ -707,15 +723,29 @@ evimp(mars4)  # jest to ważność w modelu (nie ważność w ogóle dla tego pr
 ```
 # Testy predykcji
 ```{r}
-mars2
 
-pred = predict(mars4,proba_testowa)
-actual = proba_testowa$amount
-cbind(pred,actual)
-mse(actual,pred)^0.5
-table(proba_testowa$mccname)
-table(proba_uczaca$mccname)
-# Drugi jest najlepszy
+pred = predict(mars1,proba_testowa,type="earth")
+
+pred <- data.frame(pred,proba_testowa$id)
+colnames(pred) <- c("amount","id")
+
+predykcje_testowa <- merge(x=pred,y=predykcje_testowa,by=intersect(names(predykcje_testowa),names(pred)),all.x=T,suffixes = c(".x",".y") ,sort=F) 
+
+proba_testowa$amount <- predykcje_testowa$amount
+predict_final  = predict(drzewo.przyciete, proba_testowa, type = "class")
+
+
+predict_final <- data.frame(predict_final,proba_testowa$id)
+colnames(predict_final) <- c("status","id")
+predict_final
+
+predykcje_testowa <- merge(x=predict_final,y=predykcje_testowa,by="id",all.x=T,suffixes = c(".x",".y") ,sort=F) 
+
+predykcje_testowa <- predykcje_testowa %>% select(-c(status.y))
+colnames(predykcje_testowa) <- c("id","status","amount")
+
+predykcje_testowa
+saveRDS(predykcje_testowa, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/predykcje_testowa.RData")
 ```
 
 #Saving Models
