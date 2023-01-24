@@ -142,6 +142,7 @@ table(proba_uczaca$listtype)
 create_plot(proba_uczaca$acquirerconnectionmethod)
 table(proba_uczaca$acquirerconnectionmethod)
 
+
 create_plot(proba_uczaca$browseragent)
 table(proba_uczaca$browseragent)
 
@@ -161,6 +162,7 @@ ggplot(proba_uczaca, aes(x=amount)) +
 
 
 ```
+
 ```{r}
 mean = mean(proba_uczaca$amount)
 std = sd(proba_uczaca$amount)
@@ -178,6 +180,7 @@ proba_uczaca <- filter(proba_uczaca,(amount > Tmin & amount < Tmax))
 
 # Recode Uczący
 ```{r recode_uczacy, echo=FALSE}
+
 
 proba_uczaca$description[is.na(proba_uczaca$description)] <- ""
 
@@ -267,10 +270,11 @@ proba_uczaca$day_of_week_createtime <- recode(proba_uczaca$day_of_week_createtim
                                               "środa" = "środa", "czwartek" = "czwartek",
                                               "piątek" = "piątek", .default = "weekend")
 
-proba_uczaca$month_createtime <- recode(proba_uczaca$month_createtime,
+proba_uczaca$quarter_createtime <- recode(proba_uczaca$month_createtime,
                                               "styczeń" = "I kwartał", "luty" = "I kwartał",
                                               "marzec" = "I kwartał", "kwiecień" = "II kwartał",
                                               "maj" = "II kwartał","czerwiec" = "II kwartał","lipiec" = "III kwartał","sierpień" = "III kwartał","wrzesień" = "III kwartał", .default = "IV kwartał")
+
 
 proba_uczaca$status = relevel(proba_uczaca$status,ref = "sukces")
 
@@ -383,6 +387,7 @@ table(proba_testowa$recurringaction)
 proba_testowa <- proba_testowa %>% select(-c(screenheight, screenwidth,payclickedtime,initialtransaction_id,expirymonth,expiryyear,time_to_expire,createtime))
 
 
+
 ```
 ```{r}
 # test <- cbind(proba_testowa$id)
@@ -390,6 +395,7 @@ proba_testowa <- proba_testowa %>% select(-c(screenheight, screenwidth,payclicke
 # 
 # setdiff(test1,test)
 ```
+
 
 ## Przedstawienie brakujących danych
 
@@ -399,7 +405,9 @@ missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
                           labels=names(proba_uczaca), cex.axis=.7,
                           gap=3, ylab=c("Missing data","Pattern"))
 
+
 ```
+
 
 ## Zbiór danych po grupowaniu zmiennych
 ```{r data_presetation}
@@ -453,6 +461,7 @@ missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
 # create_plot(proba_uczaca$year_createtime)
 # table(proba_uczaca$year_createtime)
 
+
 ```
 
 
@@ -481,6 +490,7 @@ proba_walidacyjna <- proba_walidacyjna %>% select(-c(id))
 # Proste drzewo
 ```{r}
 # Model Prostego drzewo
+
 
 drzewo <- rpart(
   formula = status ~ .,
@@ -514,6 +524,10 @@ confusionMatrix(predicted_simple, proba_walidacyjna$status, positive = "sukces")
 ```{r}
 # Model drzewa
 
+
+
+# Utworzenie pełnego drzewa klasyfikacyjnego dla zmiennej `status`
+```{r}
 drzewo.duze <- rpart(
   formula = status ~ .,
   data = proba_uczaca,
@@ -533,12 +547,14 @@ drzewo.duze <- rpart(
 predicted_Overfitting  = predict(drzewo.duze, proba_walidacyjna, type = "class")
 confusionMatrix(predicted_Overfitting, proba_walidacyjna$status, positive = "sukces")
 
+
 ```
 
 # Drzewo przycięte
 ```{r}
 
 # Model drzewo przycięte 
+
 bledy <- drzewo.duze$cptable
 
 nr.min.cp <- which.min(bledy[, "xerror"])  # numer min cp w sprawdzaniu krzyżowym
