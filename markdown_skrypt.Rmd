@@ -1,5 +1,8 @@
 ---
 title: "Modele Nieparametryczne"
+author:
+  - Mateusz Kacprowicz, nr albumu 282627
+  - Daniel Modzelewski, nr albumu
 output:
   html_document:
     toc: TRUE
@@ -7,6 +10,7 @@ output:
     theme: "flatly"
     code_folding: hide
 ---
+# Załadowanie bibliotek
 
 ```{r setup, message = FALSE, warning = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -31,61 +35,29 @@ library(tree)
 library(earth)
 library(plotmo)
 library(Metrics)
-
-
+```
 
 # Ładowanie danych
-
+```{r}
 load(file="dane_zaliczenie.RData")
 table(proba_testowa$recurringaction)
 head(proba_uczaca)
 ```
+# Eksploracja danych
 
-# Imputacja browser - Uczący
+## Przedstawienie braków danych w zbiorze `proba_uczaca`
+
 ```{r}
-# proba_uczaca$initialtransaction_id[is.na(proba_uczaca$initialtransaction_id)] <- proba_uczaca$id[is.na(proba_uczaca$initialtransaction_id)]
-#  
-#  for (i in 1:nrow(proba_uczaca)){
-#    if (is.na(proba_uczaca[i,]$browseragent) == TRUE){
-#      proba_uczaca[i,]$browseragent <- proba_uczaca[which(proba_uczaca$id == proba_uczaca[i,]$initialtransaction_id),]$browseragent
-#    }
-#  }
-#  
-# 
-#  temp <- proba_uczaca[proba_uczaca$browseragent=="Fotka-android",]
-#  proba_uczaca <- proba_uczaca[!(proba_uczaca$browseragent=="Fotka-android"),]
-#  browser <- proba_uczaca$browseragent
-#  browser_sub <- strsplit(browser,"[(]")
-#  browser_sub <- sapply(browser_sub,'[[',2)
-#  browser_sub <- strsplit(browser_sub,"[;]")
-#  browser_sub <-sapply(browser_sub,'[[',1)
-#  proba_uczaca$browseragent <- browser_sub
-#  
-#  proba_uczaca <- rbind(proba_uczaca, temp)
-#  table(proba_uczaca$browseragent)
-
- # saveRDS(proba_uczaca, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/proba_uczaca.rda")
-
-proba_uczaca = readRDS(file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/proba_uczaca.rda")
+missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
+                          numbers=TRUE, sortVars=TRUE,
+                          labels=names(proba_uczaca), cex.axis=.7,
+                          gap=3, ylab=c("Missing data","Pattern"))
 ```
 
-# Imputacja browser - Testowy
-```{r}
-proba_testowa = readRDS(file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/proba_testowa.rda")
-```
+## Tworzenie nowych zmiennych w zbiorze `proba_uczaca`
 
-## Tworzenie nowych zmiennych - Próba Testowa
-```{r}
-proba_testowa$day_of_week_createtime <- weekdays(proba_testowa$createtime, abbreviate = FALSE)
-proba_testowa$month_createtime <- months(proba_testowa$createtime, abbreviate = FALSE)
-proba_testowa$year_createtime <- year(proba_testowa$createtime)
-proba_testowa$time_to_expire <-paste0(as.character(proba_testowa$expiryyear),"-",as.character(proba_testowa$expirymonth),"-", '01')
-proba_testowa$time_to_expire_result <- round(as.integer(difftime(proba_testowa$time_to_expire,proba_testowa$createtime,units = "weeks")))
+Nowe zmienne zostały utworzone, ponieważ mogą istonie wpływać na jakość modelu oraz predykcji.
 
-```
-
-
-## Tworzenie nowych zmiennych - Próba Ucząca
 ```{r}
 proba_uczaca$day_of_week_createtime <- weekdays(proba_uczaca$createtime, abbreviate = FALSE)
 proba_uczaca$month_createtime <- months(proba_uczaca$createtime, abbreviate = FALSE)
@@ -95,10 +67,20 @@ proba_uczaca$time_to_expire_result <- round(as.integer(difftime(proba_uczaca$tim
 
 ```
 
+## Tworzenie nowych zmiennych w zbiorze `proba_testowa`
 
+Zbiór `proba_testowa` jest powiązany ze zbiorem `proba_uczaca`, w związku z tym wszelkie operacje wykonane na danych w zbiorze `proba_uczaca` muszą zostać także wykonane na danych w zbiorze `proba_testowa` żeby utrzymać spójność tych zbiorów.
 
+```{r}
+proba_testowa$day_of_week_createtime <- weekdays(proba_testowa$createtime, abbreviate = FALSE)
+proba_testowa$month_createtime <- months(proba_testowa$createtime, abbreviate = FALSE)
+proba_testowa$year_createtime <- year(proba_testowa$createtime)
+proba_testowa$time_to_expire <-paste0(as.character(proba_testowa$expiryyear),"-",as.character(proba_testowa$expirymonth),"-", '01')
+proba_testowa$time_to_expire_result <- round(as.integer(difftime(proba_testowa$time_to_expire,proba_testowa$createtime,units = "weeks")))
+```
 
-## Surowy zbiór danych
+## Przedstawienie zbioru danych na wykresach
+
 ```{r data_presetation}
 create_plot <- function(variable) {
   ggplot(proba_uczaca , aes(x=factor(variable), fill=factor(variable))) +
@@ -144,7 +126,7 @@ table(proba_uczaca$acquirerconnectionmethod)
 
 
 create_plot(proba_uczaca$browseragent)
-table(proba_uczaca$browseragent)
+#table(proba_uczaca$browseragent)
 
 create_plot(proba_uczaca$day_of_week_createtime)
 table(proba_uczaca$day_of_week_createtime)
@@ -159,15 +141,85 @@ table(proba_uczaca$year_createtime)
 
 ggplot(proba_uczaca, aes(x=amount)) +
  geom_histogram(color="white", fill="darkgrey")
-
-
 ```
+
+# Operacje na zbiorach danych
+
+## Imputacja braków danych w zmiennej `browseragent` w zbiorze `proba_uczaca`
+
+Można zauważyć, że tranzakcje inicjalizujące zawierają informację o `browseragent`, a tranzakcje rekurencyjne takiej informacji nie posiadają. W związku z tym imputacja następuje poprzez przypisanie takiej samej wartości zmiennej `browseragent` w tranzakcjach rekurencyjnych jaka jest przy ich tranzakcji inicjalizującej.
+
+Po imputacji braków danych wartości zostają zmienione tak żeby znane było środowisko, w którym działała przeglądarka użyta do realizacji płatności.
+
+```{r}
+proba_uczaca$initialtransaction_id[is.na(proba_uczaca$initialtransaction_id)] <- proba_uczaca$id[is.na(proba_uczaca$initialtransaction_id)]
+  
+for (i in 1:nrow(proba_uczaca)){
+  if (is.na(proba_uczaca[i,]$browseragent) == TRUE){
+    proba_uczaca[i,]$browseragent <- proba_uczaca[which(proba_uczaca$id == proba_uczaca[i,]$initialtransaction_id),]$browseragent
+  }
+}
+  
+temp <- proba_uczaca[proba_uczaca$browseragent=="Fotka-android",]
+proba_uczaca <- proba_uczaca[!(proba_uczaca$browseragent=="Fotka-android"),]
+browser <- proba_uczaca$browseragent
+browser_sub <- strsplit(browser,"[(]")
+browser_sub <- sapply(browser_sub,'[[',2)
+browser_sub <- strsplit(browser_sub,"[;]")
+browser_sub <-sapply(browser_sub,'[[',1)
+proba_uczaca$browseragent <- browser_sub
+
+proba_uczaca <- rbind(proba_uczaca, temp)
+table(proba_uczaca$browseragent)
+
+#Zapisywanie i odczytywanie pliku zostało użyte podczas pracy nad projektem w celu uniknięcia odpalania pętli,
+#która trwa długo.
+
+# saveRDS(proba_uczaca, file = "proba_uczaca.rda")
+
+# proba_uczaca = readRDS(file = "proba_uczaca.rda")
+```
+
+## Imputacja braków danych w zmiennej `browseragent` w zbiorze `proba_testowa`
+`
+```{r}
+proba_testowa$initialtransaction_id[is.na(proba_testowa$initialtransaction_id)] <- proba_testowa$id[is.na(proba_testowa$initialtransaction_id)]
+  
+for (i in 1:nrow(proba_testowa)){
+  if (is.na(proba_testowa[i,]$browseragent) == TRUE){
+    proba_testowa[i,]$browseragent <- proba_testowa[which(proba_testowa$id == proba_testowa[i,]$initialtransaction_id),]$browseragent
+  }
+}
+  
+temp <- proba_testowa[proba_testowa$browseragent=="Fotka-android",]
+proba_testowa <- proba_testowa[!(proba_testowa$browseragent=="Fotka-android"),]
+browser <- proba_testowa$browseragent
+browser_sub <- strsplit(browser,"[(]")
+browser_sub <- sapply(browser_sub,'[[',2)
+browser_sub <- strsplit(browser_sub,"[;]")
+browser_sub <-sapply(browser_sub,'[[',1)
+proba_testowa$browseragent <- browser_sub
+
+proba_testowa <- rbind(proba_testowa, temp)
+table(proba_testowa$browseragent)
+
+#Zapisywanie i odczytywanie pliku zostało użyte podczas pracy nad projektem w celu uniknięcia odpalania pętli,
+#która trwa długo.
+
+# saveRDS(proba_testowa, file = "proba_testowa.rda")
+
+# proba_testowa = readRDS(file = "proba_testowa.rda")
+```
+
+## Odrzucenie wartości skrajnych
+
+W zbiorze danych, niektóre wartości zmiennej `amount` mogą znacznie wpływać na wyniki modelu ze względu na wyjątkowo duże wartości. Zdecydowano żeby odrzucić rekordy ze zmienną `amount` odbiegającą od średniej o 3 odchylenia.
 
 ```{r}
 mean = mean(proba_uczaca$amount)
 std = sd(proba_uczaca$amount)
 
-# wykorzystanie regu?y 3 odchyle?
+# wykorzystanie reguły 3 odchyleń
 Tmin = mean-(3*std)
 Tmax = mean+(3*std)
 
@@ -178,7 +230,8 @@ proba_uczaca <- filter(proba_uczaca,(amount > Tmin & amount < Tmax))
 ```
 
 
-# Recode Uczący
+## Recode danych w zbiorze `proba_uczaca`
+
 ```{r recode_uczacy, echo=FALSE}
 
 
@@ -216,7 +269,7 @@ proba_uczaca$browseragent <- recode(proba_uczaca$browseragent,
                              "PlayStation 4 7.51) AppleWebKit/605.1.15"="PS4",
                              "SMART-TV"="Smart-tv",
                              .default = "Windows")
-table(proba_uczaca$browseragent)
+
 proba_uczaca$countrycode <- recode(proba_uczaca$countrycode, "PL"="PL", .default = "other")
 
 proba_uczaca$status <- recode(proba_uczaca$status, "completed successfully"="sukces", .default = "porażka")
@@ -234,8 +287,7 @@ proba_uczaca$recurringaction <- recode(proba_uczaca$recurringaction, "AUTO"="rek
 
 
 
-# Usunięcie tranzakcji inicjalizujących z bazy
-proba_uczaca <- proba_uczaca[!(proba_uczaca$recurringaction=="inicjalizujące"),]
+
 
 
 proba_uczaca$level <- recode(proba_uczaca$level,
@@ -277,13 +329,20 @@ proba_uczaca$quarter_createtime <- recode(proba_uczaca$month_createtime,
 
 
 proba_uczaca$status = relevel(proba_uczaca$status,ref = "sukces")
-
-## Usuwanie zmiennych
-
-proba_uczaca <- proba_uczaca %>% select(-c(screenheight, screenwidth,payclickedtime,id,initialtransaction_id,expirymonth,expiryyear,time_to_expire,createtime,recurringaction))
- 
-
 ```
+
+## Usunięcie tranzakcji inicjalizujących ze zbioru `proba_uczaca`
+
+```{r}
+proba_uczaca <- proba_uczaca[!(proba_uczaca$recurringaction=="inicjalizujące"),]
+```
+
+## Usunięcie zmiennych nieistotnych oraz takich, które są w 100% puste i nie ma możlwości przeprowadzenia ich imputacji
+
+```{r}
+proba_uczaca <- proba_uczaca %>% select(-c(screenheight, screenwidth,payclickedtime,id,initialtransaction_id,expirymonth,expiryyear,time_to_expire,createtime,recurringaction))
+```
+
 # Recode Testowy
 
 ```{r recode_uczacy, echo=FALSE}
