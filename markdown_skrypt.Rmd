@@ -40,7 +40,6 @@ library(Metrics)
 # Ładowanie danych
 ```{r}
 load(file="dane_zaliczenie.RData")
-table(proba_testowa$recurringaction)
 head(proba_uczaca)
 ```
 # Eksploracja danych
@@ -56,7 +55,7 @@ missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
 
 ## Tworzenie nowych zmiennych w zbiorze `proba_uczaca`
 
-Nowe zmienne zostały utworzone, ponieważ mogą istonie wpływać na jakość modelu oraz predykcji.
+Nowe zmienne zostały utworzone, ponieważ mogą istotnie wpływać na jakość modelu oraz predykcji.
 
 ```{r}
 proba_uczaca$day_of_week_createtime <- weekdays(proba_uczaca$createtime, abbreviate = FALSE)
@@ -149,7 +148,8 @@ ggplot(proba_uczaca, aes(x=amount)) +
 
 Można zauważyć, że transakcje inicjalizujące zawierają informację o `browseragent`, a transakcje rekurencyjne takiej informacji nie posiadają. W związku z tym imputacja następuje poprzez przypisanie takiej samej wartości zmiennej `browseragent` w transakcjach rekurencyjnych jaka jest przy ich transakcje inicjalizującej.
 
-Po imputacji braków danych wartości zostają zmienione tak żeby znane było środowisko, w którym działała przeglądarka użyta do realizacji płatności.
+
+Po imputacji braków danych wartości zostają zmienione tak żeby znane było środowisko, w którym działała przeglądarka użyta do realizacji płatności. Postanowiono, że może to lepiej zobrazować dane oraz jest to cenniejsza informacja niż konkretna wersja danej przeglądarki.
 
 ```{r}
 proba_uczaca$initialtransaction_id[is.na(proba_uczaca$initialtransaction_id)] <- proba_uczaca$id[is.na(proba_uczaca$initialtransaction_id)]
@@ -180,7 +180,7 @@ table(proba_uczaca$browseragent)
 # proba_uczaca = readRDS(file = "proba_uczaca.rda")
 ```
 
-## Imputacja braków danych w zmiennej `browseragent` w zbiorze `proba_testowa`
+## Imputacja braków danych zmiennej `browseragent` w zbiorze `proba_testowa`
 `
 ```{r}
 proba_testowa$initialtransaction_id[is.na(proba_testowa$initialtransaction_id)] <- proba_testowa$id[is.na(proba_testowa$initialtransaction_id)]
@@ -213,7 +213,9 @@ table(proba_testowa$browseragent)
 
 ## Odrzucenie wartości skrajnych
 
-W zbiorze danych, niektóre wartości zmiennej `amount` mogą znacznie wpływać na wyniki modelu ze względu na wyjątkowo duże wartości. Zdecydowano żeby odrzucić wartości skrajne w rekordach ze zmienną `amount` odbiegających od średniej o 3 odchylenia.
+
+W zbiorze danych, niektóre wartości zmiennej `amount` mogą znacznie wpływać na wyniki modelu ze względu na wyjątkowo duże wartości. Zdecydowano żeby odrzucić rekordy ze zmienną `amount` odbiegającą od średniej o 3 odchylenia standardowe.
+
 
 ```{r}
 mean = mean(proba_uczaca$amount)
@@ -360,6 +362,7 @@ proba_uczaca <- proba_uczaca %>% select(-c(screenheight, screenwidth,payclickedt
 Ta sama czynność została wykonana na zbiorze `proba testowa` w celu ujednolicenia danych
 ```{r recode_uczacy, echo=FALSE}
 
+
 proba_testowa$description[is.na(proba_testowa$description)] <- ""
 
 proba_testowa$description <- recode(proba_testowa$description,
@@ -416,6 +419,7 @@ proba_testowa <- proba_testowa[!(proba_testowa$recurringaction=="inicjalizujące
 # Usunięcie transakcje inicjalizujących z bazy
 
 
+
 proba_testowa$level <- recode(proba_testowa$level,
                              "WORLD"="WORLD",
                              "PLATINUM"="WORLD",
@@ -453,11 +457,19 @@ proba_testowa$quarter_createtime <- recode(proba_testowa$month_createtime,
                                               "styczeń" = "I kwartał", "luty" = "I kwartał",
                                               "marzec" = "I kwartał", "kwiecień" = "II kwartał",
                                               "maj" = "II kwartał","czerwiec" = "II kwartał","lipiec" = "III kwartał","sierpień" = "III kwartał","wrzesień" = "III kwartał", .default = "IV kwartał")
+```
+
 
 
 proba_testowa <- proba_testowa %>% select(-c(screenheight, screenwidth,payclickedtime,initialtransaction_id,expirymonth,expiryyear,time_to_expire,createtime,month_createtime))
+=======
 
 
+```{r}
+proba_testowa <- proba_testowa[!(proba_testowa$recurringaction=="inicjalizujące"),]
+```
+
+## Usunięcie ze zbioru `proba_testowa` tych samych zmiennych co ze zbioru `proba_uczaca` 
 
 ```
 
@@ -469,6 +481,7 @@ create_plot <- function(variable) {
     theme(legend.position="none",axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 }
+
 
 
 create_plot(proba_uczaca$browseragent)
@@ -485,6 +498,7 @@ table(proba_uczaca$issuer)
 
 create_plot(proba_uczaca$type)
 table(proba_uczaca$type)
+
 
 create_plot(proba_uczaca$level)
 table(proba_uczaca$level)
@@ -523,6 +537,8 @@ ggplot(proba_uczaca, aes(x=amount)) +
 
 ## Podzielenie zbioru na walidacyjny i uczący
 
+
+## Podział zbioru `proba_uczaca` i utworzenie z części tego zbioru zbiór `proba_walidacyjna`
 ```{r}
 set.seed(2137)
 
@@ -540,19 +556,16 @@ proba_uczaca <- proba_uczaca %>% select(-c(id))
 proba_walidacyjna <- proba_walidacyjna %>% select(-c(id))
 ```
 
+## Budowa modelu prostego drzewa klasyfikacyjnego
 
-
-
-
-# Proste drzewo
 ```{r}
-# Model Prostego drzewo
-
+# Model prostego drzewa
 
 drzewo <- rpart(
   formula = status ~ .,
   data = proba_uczaca,
 )
+
 # wykres prostego drzewa
 
 rpart.plot(x= drzewo,
@@ -577,22 +590,31 @@ predicted_simple <- predict(drzewo, proba_walidacyjna, type = "class")
 confusionMatrix(predicted_simple, proba_walidacyjna$status, positive = "sukces")
 ```
 
-# Utworzenie pełnego drzewa klasyfikacyjnego dla zmiennej `status`
+
+Jak można zauważyć na wykresie drzewa oraz w podsumowaniu, najistotniejszą zmienną jest zmienna `browseragent`. Dokładność tego modelu wynosi 82%.
+
+## Budowa modelu przeuczonego drzewa klasyfikacyjnego
+
+
 ```{r}
+# Utworzenie pełnego drzewa klasyfikacyjnego dla zmiennej `status`
+
 drzewo.duze <- rpart(
   formula = status ~ .,
   data = proba_uczaca,
   control = rpart.control(cp=0)
 )
 
+summary(drzewo.duze)
+
 # Wykres Drzewa
-# 
-# rpart.plot(x= drzewo.duze,
-#            box.palette = "GnBu",
-#            branch.lty = 3,
-#            shadow.col = "gray",
-#             nn = TRUE,
-#            extra = 104)
+ 
+rpart.plot(x= drzewo.duze,
+           box.palette = "GnBu",
+           branch.lty = 3,
+           shadow.col = "gray",
+            nn = TRUE,
+           extra = 104)
 
 # Przewidywanie
 predicted_Overfitting  = predict(drzewo.duze, proba_walidacyjna, type = "class")
@@ -601,7 +623,10 @@ confusionMatrix(predicted_Overfitting, proba_walidacyjna$status, positive = "suk
 
 ```
 
-# Drzewo przycięte
+Model pełnego drzewa klasyfikacyjnego ma 84% dokładności, jest to wynik niewiele lepszy niż w przypadku prostego drzewa. Najważniejszą róznicą jest to, że w tym modelu najważniejszą zmienną jest `time_to_expire_result`, czyli pozostały czas do minięcia ważności karty płatniczej.
+
+## Budowa modelu drzewa klasyfikacyjnego przyciętego (optymalnego)
+
 ```{r}
 
 # Model drzewo przycięte 
@@ -622,6 +647,8 @@ rpart.plot(x= drzewo.przyciete,
             nn = TRUE,
            extra = 104)
 
+summary(drzewo.przyciete)
+
 
 # Przewidywanie
 predicted_prune  = predict(drzewo.przyciete, proba_walidacyjna, type = "class")
@@ -630,12 +657,15 @@ cbind(drzewo.przyciete$variable.importance)
 
 ```
 
-# MARS
 
+=======
+Model przyciętego drzewa klasyfikacyjnego ma 85% dokładności, jest to wynik o 1 punkt procentowy lepszy niż w przypadku pełnego drzewa klasyfikacyjnego. Najważniejszą zmienną w tym modelu także jest `time_to_expire_result`, czyli pozostały czas do minięcia ważności karty płatniczej.
 
-## prosty model MARS
+## Budowa modeli MARS
+
 ```{r}
-# Usunięcie zmiennej status ze względu na jej brak w zmiennej proba_testowa
+# Model MARS dla amount
+
 proba_uczaca <- proba_uczaca %>% select(-c(status))
 
 mars1 <- earth(amount ~ .,
@@ -656,9 +686,11 @@ plot(mars1$gcv.per.subset)
 ```
 Wynik pierwszego GCV = 1857.408
 
+
 # Model MARS z interakcjami 
 ```{r}
 # Zbudować model MARS pozwalając na interakcje
+
 
 mars2 <- earth(formula = amount ~ .,
                data = proba_uczaca,
@@ -668,6 +700,7 @@ mars2 <- earth(formula = amount ~ .,
       )
 
 summary(mars2)
+
 
 
 ```
@@ -708,12 +741,13 @@ gcv.minspan <- sapply(1:10, function(x)
               minspan = x)$gcv) # minspan = 8
 
 
-gcv.minspan
+
 
 
 
 mars3 <- earth(formula = amount ~ .,
                data = proba_uczaca,
+
               degree = 3,
               nk = 90,
               trace = 3,
@@ -721,6 +755,7 @@ mars3 <- earth(formula = amount ~ .,
               minspan = 8)
 
 summary(mars3) # GCV 1474.47
+
 
 
 # Sporządzić wykres diagnostyczny modelu
@@ -750,6 +785,8 @@ plot(mars4, which = 1)
 
 
 
+
+
 # Sporządzić wykres przedstawiający wpływ poszczególnych zmiennych niezależnych na zmienną zależną
 plotmo(mars1)
 plotmo(mars2)
@@ -773,13 +810,16 @@ plotmo(mars4,
 
 # Oszacować ważność zmiennych objaśniających
 evimp(mars4)  # jest to ważność w modelu (nie ważność w ogóle dla tego problemu regresji)
-
-
 ```
-# Testy predykcji
-```{r}
+
+Utworzono 5 modeli MARS z różnymi parametrami. Po analizie wyników do predykcji użyty zostanie model MARS `mars1`.
+
+# Predykcje
+
+Do predykcji zmiennej `amount` wykorzystano model MARS `mars1`. Do predykcji zmiennej `status` wykorzystano drzewo klasyfikacyjne przycięte.
 
 pred = predict(mars3,proba_testowa,type="earth")
+
 
 
 predykcje_testowa <- merge(x=pred,y=predykcje_testowa,by=intersect(names(predykcje_testowa),names(pred)),all.x=T,suffixes = c(".x",".y") ,sort=F) 
@@ -787,7 +827,7 @@ predykcje_testowa <- merge(x=pred,y=predykcje_testowa,by=intersect(names(predykc
 proba_testowa$amount <- predykcje_testowa$amount
 predict_final  = predict(drzewo.przyciete, proba_testowa, type = "class")
 
-
+# Predykcja zmiennej status
 predict_final <- data.frame(predict_final,proba_testowa$id)
 colnames(predict_final) <- c("status","id")
 predict_final
@@ -798,7 +838,8 @@ predykcje_testowa <- predykcje_testowa %>% select(-c(status.y))
 colnames(predykcje_testowa) <- c("id","status","amount")
 
 predykcje_testowa
-saveRDS(predykcje_testowa, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/predykcje_testowa.RData")
+
+# saveRDS(predykcje_testowa, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/predykcje_testowa.RData")
 ```
 
 #Saving Models
