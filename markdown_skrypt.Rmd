@@ -147,7 +147,7 @@ ggplot(proba_uczaca, aes(x=amount)) +
 
 ## Imputacja braków danych w zmiennej `browseragent` w zbiorze `proba_uczaca`
 
-Można zauważyć, że tranzakcje inicjalizujące zawierają informację o `browseragent`, a tranzakcje rekurencyjne takiej informacji nie posiadają. W związku z tym imputacja następuje poprzez przypisanie takiej samej wartości zmiennej `browseragent` w tranzakcjach rekurencyjnych jaka jest przy ich tranzakcji inicjalizującej.
+Można zauważyć, że transakcje inicjalizujące zawierają informację o `browseragent`, a transakcje rekurencyjne takiej informacji nie posiadają. W związku z tym imputacja następuje poprzez przypisanie takiej samej wartości zmiennej `browseragent` w transakcjach rekurencyjnych jaka jest przy ich transakcje inicjalizującej.
 
 Po imputacji braków danych wartości zostają zmienione tak żeby znane było środowisko, w którym działała przeglądarka użyta do realizacji płatności.
 
@@ -172,8 +172,8 @@ proba_uczaca$browseragent <- browser_sub
 proba_uczaca <- rbind(proba_uczaca, temp)
 table(proba_uczaca$browseragent)
 
-#Zapisywanie i odczytywanie pliku zostało użyte podczas pracy nad projektem w celu uniknięcia odpalania pętli,
-#która trwa długo.
+# Zapisywanie i odczytywanie pliku zostało użyte podczas pracy nad projektem w celu uniknięcia odpalania pętli,
+# która długo trwa.
 
 # saveRDS(proba_uczaca, file = "proba_uczaca.rda")
 
@@ -203,8 +203,8 @@ proba_testowa$browseragent <- browser_sub
 proba_testowa <- rbind(proba_testowa, temp)
 table(proba_testowa$browseragent)
 
-#Zapisywanie i odczytywanie pliku zostało użyte podczas pracy nad projektem w celu uniknięcia odpalania pętli,
-#która trwa długo.
+# Zapisywanie i odczytywanie pliku zostało użyte podczas pracy nad projektem w celu uniknięcia odpalania pętli,
+# która długo trwa.
 
 # saveRDS(proba_testowa, file = "proba_testowa.rda")
 
@@ -213,7 +213,7 @@ table(proba_testowa$browseragent)
 
 ## Odrzucenie wartości skrajnych
 
-W zbiorze danych, niektóre wartości zmiennej `amount` mogą znacznie wpływać na wyniki modelu ze względu na wyjątkowo duże wartości. Zdecydowano żeby odrzucić rekordy ze zmienną `amount` odbiegającą od średniej o 3 odchylenia.
+W zbiorze danych, niektóre wartości zmiennej `amount` mogą znacznie wpływać na wyniki modelu ze względu na wyjątkowo duże wartości. Zdecydowano żeby odrzucić wartości skrajne w rekordach ze zmienną `amount` odbiegających od średniej o 3 odchylenia.
 
 ```{r}
 mean = mean(proba_uczaca$amount)
@@ -230,9 +230,22 @@ proba_uczaca <- filter(proba_uczaca,(amount > Tmin & amount < Tmax))
 ```
 
 
+## Przedstawienie brakujących danych
+
+```{r}
+missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
+                          numbers=TRUE, sortVars=TRUE,
+                          labels=names(proba_uczaca), cex.axis=.7,
+                          gap=3, ylab=c("Missing data","Pattern"))
+
+
+```
+
+
 ## Recode danych w zbiorze `proba_uczaca`
 
-```{r recode_uczacy, echo=FALSE}
+Dane zostały posegregowane według kategori w celu ustrukturyzowania drzewa i ustandaryzowania ilości zmiennych znajdujących się w próbie.
+```{r, echo=FALSE}
 
 
 proba_uczaca$description[is.na(proba_uczaca$description)] <- ""
@@ -327,11 +340,11 @@ proba_uczaca$quarter_createtime <- recode(proba_uczaca$month_createtime,
                                               "marzec" = "I kwartał", "kwiecień" = "II kwartał",
                                               "maj" = "II kwartał","czerwiec" = "II kwartał","lipiec" = "III kwartał","sierpień" = "III kwartał","wrzesień" = "III kwartał", .default = "IV kwartał")
 
-
+# Zmiana  
 proba_uczaca$status = relevel(proba_uczaca$status,ref = "sukces")
 ```
 
-## Usunięcie tranzakcji inicjalizujących ze zbioru `proba_uczaca`
+## Usunięcie transakcji inicjalizujących ze zbioru `proba_uczaca`
 
 ```{r}
 proba_uczaca <- proba_uczaca[!(proba_uczaca$recurringaction=="inicjalizujące"),]
@@ -340,11 +353,11 @@ proba_uczaca <- proba_uczaca[!(proba_uczaca$recurringaction=="inicjalizujące"),
 ## Usunięcie zmiennych nieistotnych oraz takich, które są w 100% puste i nie ma możlwości przeprowadzenia ich imputacji
 
 ```{r}
-proba_uczaca <- proba_uczaca %>% select(-c(screenheight, screenwidth,payclickedtime,id,initialtransaction_id,expirymonth,expiryyear,time_to_expire,createtime,recurringaction))
+proba_uczaca <- proba_uczaca %>% select(-c(screenheight, screenwidth,payclickedtime,id,initialtransaction_id,expirymonth,expiryyear,time_to_expire,createtime,recurringaction,month_createtime))
 ```
 
 # Recode Testowy
-
+Ta sama czynność została wykonana na zbiorze `proba testowa` w celu ujednolicenia danych
 ```{r recode_uczacy, echo=FALSE}
 
 proba_testowa$description[is.na(proba_testowa$description)] <- ""
@@ -400,7 +413,7 @@ proba_testowa$recurringaction <- recode(proba_testowa$recurringaction, "AUTO"="r
 proba_testowa <- proba_testowa[!(proba_testowa$recurringaction=="inicjalizujące"),]
 
 
-# Usunięcie tranzakcji inicjalizujących z bazy
+# Usunięcie transakcje inicjalizujących z bazy
 
 
 proba_testowa$level <- recode(proba_testowa$level,
@@ -436,94 +449,79 @@ proba_testowa$day_of_week_createtime <- recode(proba_testowa$day_of_week_createt
                                               "środa" = "środa", "czwartek" = "czwartek",
                                               "piątek" = "piątek", .default = "weekend")
 
-proba_testowa$month_createtime <- recode(proba_testowa$month_createtime,
+proba_testowa$quarter_createtime <- recode(proba_testowa$month_createtime,
                                               "styczeń" = "I kwartał", "luty" = "I kwartał",
                                               "marzec" = "I kwartał", "kwiecień" = "II kwartał",
                                               "maj" = "II kwartał","czerwiec" = "II kwartał","lipiec" = "III kwartał","sierpień" = "III kwartał","wrzesień" = "III kwartał", .default = "IV kwartał")
 
-table(proba_testowa$recurringaction)
 
-proba_testowa <- proba_testowa %>% select(-c(screenheight, screenwidth,payclickedtime,initialtransaction_id,expirymonth,expiryyear,time_to_expire,createtime))
+proba_testowa <- proba_testowa %>% select(-c(screenheight, screenwidth,payclickedtime,initialtransaction_id,expirymonth,expiryyear,time_to_expire,createtime,month_createtime))
 
-
-
-```
-```{r}
-# test <- cbind(proba_testowa$id)
-# test1 <- cbind(predykcje_testowa$id)
-# 
-# setdiff(test1,test)
-```
-
-
-## Przedstawienie brakujących danych
-
-```{r}
-missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
-                          numbers=TRUE, sortVars=TRUE,
-                          labels=names(proba_uczaca), cex.axis=.7,
-                          gap=3, ylab=c("Missing data","Pattern"))
 
 
 ```
-
 
 ## Zbiór danych po grupowaniu zmiennych
-```{r data_presetation}
-# create_plot <- function(variable) {
-#   ggplot(proba_uczaca , aes(x=factor(variable), fill=factor(variable))) +
-#     geom_bar() +
-#     theme(legend.position="none",axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-#
-# }
-#
-#
-# create_plot(proba_uczaca$issuer)
-# table(proba_uczaca$issuer)
-#
-# create_plot(proba_uczaca$mccname)
-# table(proba_uczaca$mccname)
-#
-# create_plot(proba_uczaca$recurringaction)
-# table(proba_uczaca$recurringaction)
-#
-# create_plot(proba_uczaca$type)
-# table(proba_uczaca$type)
-#
-# create_plot(proba_uczaca$description)
-# table(proba_uczaca$description)
-#
-# create_plot(proba_uczaca$level)
-# table(proba_uczaca$level)
-#
-# create_plot(proba_uczaca$status)
-# table(proba_uczaca$status)
-#
-# #create_plot(proba_uczaca$countrycode)
-# #table(proba_uczaca$countrycode)
-#
-# create_plot(proba_uczaca$listtype)
-# table(proba_uczaca$listtype)
-#
-# create_plot(proba_uczaca$acquirerconnectionmethod)
-# table(proba_uczaca$acquirerconnectionmethod)
-#
-# create_plot(proba_uczaca$day_of_week_createtime)
-# table(proba_uczaca$day_of_week_createtime)
-#
-# create_plot(proba_uczaca$month_createtime)
-# table(proba_uczaca$month_createtime)
-#
-# create_plot(proba_uczaca$expirydate)
-# table(proba_uczaca$expirydate)
-#
-# create_plot(proba_uczaca$year_createtime)
-# table(proba_uczaca$year_createtime)
+```{r}
+create_plot <- function(variable) {
+  ggplot(proba_uczaca , aes(x=factor(variable), fill=factor(variable))) +
+    geom_bar() +
+    theme(legend.position="none",axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+}
+
+
+create_plot(proba_uczaca$browseragent)
+table(proba_uczaca$browseragent)
+
+create_plot(proba_uczaca$description)
+table(proba_uczaca$description)
+
+create_plot(proba_uczaca$acquirerconnectionmethod)
+table(proba_uczaca$acquirerconnectionmethod)
+
+create_plot(proba_uczaca$issuer)
+table(proba_uczaca$issuer)
+
+create_plot(proba_uczaca$type)
+table(proba_uczaca$type)
+
+create_plot(proba_uczaca$level)
+table(proba_uczaca$level)
+
+create_plot(proba_uczaca$countrycode)
+table(proba_uczaca$countrycode)
+
+create_plot(proba_uczaca$listtype)
+table(proba_uczaca$listtype)
+
+create_plot(proba_uczaca$mccname)
+table(proba_uczaca$mccname)
+
+create_plot(proba_uczaca$status)
+table(proba_uczaca$status)
+
+create_plot(proba_uczaca$day_of_week_createtime)
+table(proba_uczaca$day_of_week_createtime)
+
+create_plot(proba_uczaca$quarter_createtime)
+table(proba_uczaca$quarter_createtime)
+
+create_plot(proba_uczaca$year_createtime)
+table(proba_uczaca$year_createtime)
+
+ggplot(proba_uczaca, aes(x=time_to_expire_result)) +
+ geom_histogram(color="white", fill="darkgrey")
+
+ggplot(proba_uczaca, aes(x=amount)) +
+ geom_histogram(color="white", fill="darkgrey")
+
+
 
 
 ```
 
-
+## Podzielenie zbioru na walidacyjny i uczący
 
 ```{r}
 set.seed(2137)
@@ -537,9 +535,9 @@ proba_walidacyjna <- wal
 
 rm(wal)
 rm(ucz)
+
 proba_uczaca <- proba_uczaca %>% select(-c(id))
 proba_walidacyjna <- proba_walidacyjna %>% select(-c(id))
-
 ```
 
 
@@ -578,12 +576,6 @@ predicted_simple <- predict(drzewo, proba_walidacyjna, type = "class")
 
 confusionMatrix(predicted_simple, proba_walidacyjna$status, positive = "sukces")
 ```
-# Drzewo przeuczone
-
-```{r}
-# Model drzewa
-
-
 
 # Utworzenie pełnego drzewa klasyfikacyjnego dla zmiennej `status`
 ```{r}
@@ -638,20 +630,20 @@ cbind(drzewo.przyciete$variable.importance)
 
 ```
 
-## MARS
-```{r}
-# Model MARS dla amount
+# MARS
 
-# Nie działa dla testowej próby
+
+## prosty model MARS
+```{r}
+# Usunięcie zmiennej status ze względu na jej brak w zmiennej proba_testowa
 proba_uczaca <- proba_uczaca %>% select(-c(status))
 
 mars1 <- earth(amount ~ .,
-               data = proba_uczaca)
+               data = proba_uczaca,
+               trace=3
+               )
 summary(mars1)
 
-```
-
-```{r}
 X <- mars1$bx # macierz faktycznych predyktorów (w finalnym modelu)
 
 punkty <- mars1$cuts
@@ -661,105 +653,109 @@ przycinanie <- mars1$prune.terms
 
 plot(mars1$rss.per.subset)
 plot(mars1$gcv.per.subset)
+```
+Wynik pierwszego GCV = 1857.408
 
+# Model MARS z interakcjami 
+```{r}
 # Zbudować model MARS pozwalając na interakcje
-
-
 
 mars2 <- earth(formula = amount ~ .,
                data = proba_uczaca,
-      degree = 3,
-      trace = 3
-      ) # drukuje szczegóły przebiegu fazy I i II
+               trace= 3,
+               degree = 3,
+  
+      )
+
 summary(mars2)
+
+
+```
+Najlepsze GCV = 1478.718
+
+# Tuning MARS Model
+```{r}
 # Ustalić optymalne wartości parametrów ('nk', 'minspan', 'thresh')
         # 'nk' - max liczba funkcji bazowych w pierwszej fazie
         # 'minspan' - min liczba obserwacji pomiędzy węzłami (dla minspan=1 węzły dla każdej obserwacji)
         # 'thresh' - min zwiększenie R2
 
-# gcv.nk <- sapply(seq(5, 80, 5), function(x)
-#         earth(formula = amount ~ .,
-#                data = proba_uczaca,
-#               degree = 3,
-#               nk = x,
-#               trace = 3
-#               )$gcv) #gcv 80
+ gcv.nk <- sapply(seq(40, 90, 10), function(x)
+         earth(formula = amount ~ .,
+               data = proba_uczaca,
+               degree = 3,
+               nk = x,
+               trace = 3
+               )$gcv) #nk 90
+
+gcv.nk
+gcv.thresh <- sapply(0.1^(3:5), function(x)
+        earth(formula = amount ~ .,
+               data = proba_uczaca,
+              degree = 3,
+              nk = 90,
+              trace = 3,
+              thresh = x)$gcv)  # thresh = 0.001
+
+
+gcv.minspan <- sapply(1:10, function(x)
+        earth(formula = amount ~ .,
+               data = proba_uczaca,
+              degree = 3,
+              nk = 90,
+              trace = 3,
+              thresh = 0.001,
+              minspan = x)$gcv) # minspan = 8
+
+
+gcv.minspan
 
 
 
 mars3 <- earth(formula = amount ~ .,
                data = proba_uczaca,
-               degree = 3,
-               trace=3,
-               nk = 80)
-summary(mars3)
-# 
-# gcv.thresh <- sapply(0.1^(3:5), function(x)
-#         earth(formula = amount ~ .,
-#                data = proba_uczaca,
-#               degree = 3,
-#               nk = 200,
-#               trace = 3,
-#               thresh = x)$gcv)  # thresh = 0.0001
-# 
-# gcv.minspan <- sapply(1:10, function(x)
-#         earth(formula = amount ~ .,
-#                data = proba_uczaca,
-#               degree = 3,
-#               nk = 160,
-#               trace = 3,
-#               thresh = 0.0001,
-#               minspan = x)$gcv) # minspan = 2
-# 
-# 
-# gcv.nk <- sapply(seq(80, 200, 5), function(x)
-#         earth(formula = amount ~ .,
-#                data = proba_uczaca,
-#                degree = 3,
-#                nk = x,
-#                thresh = 0.0001,
-#                trace = 3,
-#                minspan = 2
-#               )$gcv) #gcv 150
+              degree = 3,
+              nk = 90,
+              trace = 3,
+              thresh = 0.001,
+              minspan = 8)
 
+summary(mars3) # GCV 1474.47
+
+
+# Sporządzić wykres diagnostyczny modelu
+plot(mars3, info = T)
+```
+GCV 1474.47
+
+```{r}
+
+
+
+
+# Sprawdzić jaka byłaby optymalna liczba składników (terms) na podstawie sprawdzania krzyżowego
 mars4 <- earth(formula = amount ~ .,
                data = proba_uczaca,
                degree = 3,
-               nk = 150,
-               thresh = 0.0001,
+               nk = 90,
+               thresh = 0.001,
+               minspan = 8,
                trace = 3,
-               minspan = 2)
+               pmethod = "cv", # sprawdzanie krzyżowe
+               nfold = 10,  # liczba części w sprawdzaniu krzyżowym
+               ncross = 1, # ile razy wykonać cv (większa wartość = stabilniejsze wyniki)
+               keepxy = T) # zachowanie danych x i y, żeby na wykresach diagnostycznych było cv terms 23
+
+plot(mars4, which = 1)
 
 
-summary(mars4)
-
-# Sporządzić wykres diagnostyczny modelu
-plot(mars4, info = T)
-
-# Sprawdzić jaka byłaby optymalna liczba składników (terms) na podstawie sprawdzania krzyżowego
-# mars5 <- earth(formula = amount ~ .,
-#                data = proba_uczaca,
-#                degree = 3,
-#                nk = 150,
-#                thresh = 0.0001,
-#                minspan = 2,
-#                trace = 3,
-#                pmethod = "cv", # sprawdzanie krzyżowe
-#                nfold = 10,  # liczba części w sprawdzaniu krzyżowym
-#                ncross = 1, # ile razy wykonać cv (większa wartość = stabilniejsze wyniki)
-#                keepxy = T) # zachowanie danych x i y, żeby na wykresach diagnostycznych było cv
-# terms 23
-
-plot(mars5, which = 1)
-
-summary(mars5)
 
 # Sporządzić wykres przedstawiający wpływ poszczególnych zmiennych niezależnych na zmienną zależną
 plotmo(mars1)
 plotmo(mars2)
 plotmo(mars3)
 plotmo(mars4)
-plotmo(mars5)
+
 
 
 plotmo(mars1, 
@@ -783,10 +779,8 @@ evimp(mars4)  # jest to ważność w modelu (nie ważność w ogóle dla tego pr
 # Testy predykcji
 ```{r}
 
-pred = predict(mars1,proba_testowa,type="earth")
+pred = predict(mars3,proba_testowa,type="earth")
 
-pred <- data.frame(pred,proba_testowa$id)
-colnames(pred) <- c("amount","id")
 
 predykcje_testowa <- merge(x=pred,y=predykcje_testowa,by=intersect(names(predykcje_testowa),names(pred)),all.x=T,suffixes = c(".x",".y") ,sort=F) 
 
@@ -809,11 +803,11 @@ saveRDS(predykcje_testowa, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nie
 
 #Saving Models
 ```{r}
- # saveRDS(mars1, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars1.rda")
- # saveRDS(mars2, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars2.rda")
- # saveRDS(mars3, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars3.rda")
- # saveRDS(mars4, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars4.rda")
- # saveRDS(mars5, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars5.rda")
+  saveRDS(mars1, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars1.rda")
+  saveRDS(mars2, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars2.rda")
+ saveRDS(mars3, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars3.rda")
+  saveRDS(mars4, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars4.rda")
+
 ```
 
 #Loading Models
@@ -822,7 +816,7 @@ mars1 = readRDS(file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycz
 mars2 = readRDS(file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars2.rda")
 mars3  = readRDS(file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars3.rda")
 mars4 = readRDS(file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars4.rda")
-mars5 = readRDS(file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars5.rda")
+
 ```
 
 
