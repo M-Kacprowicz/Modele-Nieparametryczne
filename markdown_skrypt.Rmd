@@ -37,17 +37,16 @@ library(earth)
 library(plotmo)
 library(Metrics)
 ```
+
 # Eksploracja danych
 
-###  Ładowanie danych
+##  Ładowanie danych
 ```{r}
 load(file="dane_zaliczenie.RData")
 head(proba_uczaca)
 ```
 
-
-###  Przedstawienie braków danych w zbiorze `proba_uczaca`
-
+## Przedstawienie braków danych w zbiorze `proba_uczaca`
 
 ```{r}
 missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
@@ -56,10 +55,10 @@ missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
                           gap=3, ylab=c("Missing data","Pattern"))
 ```
 
-Można zauważyć braki danych występujące w zbiorze `próba_ucząca.` Istnieją 4 zmienne, które posiadają braki danych na poziomie ponad 85% przy czym jedynie zmienna `browseragent` zostanie za imputowana ze względu znalezione zależności pomiędzy płatnościami inicjalizującymi i rekurencyjnymi. Pozostałe braki danych zostaną ponownie sprawdzone po odrzuceniu płatności inicjalizujących w zmiennej `recurringaction`.
+Można zauważyć braki danych występujące w zbiorze `proba_uczaca.` Istnieją 4 zmienne, które posiadają braki danych na poziomie ponad 85% przy czym jedynie zmienna `browseragent` zostanie za imputowana ze względu znalezione zależności pomiędzy płatnościami inicjalizującymi i rekurencyjnymi. Pozostałe braki danych zostaną ponownie sprawdzone po odrzuceniu płatności inicjalizujących w zmiennej `recurringaction`.
 
 
-### Tworzenie nowych zmiennych w zbiorze `proba_uczaca`
+## Tworzenie nowych zmiennych w zbiorze `proba_uczaca`
 
 Nowe zmienne zostały utworzone, ponieważ mogą istotnie wpływać na jakość modelu oraz predykcji.
 
@@ -72,7 +71,7 @@ proba_uczaca$time_to_expire_result <- round(as.integer(difftime(proba_uczaca$tim
 
 ```
 
-### Tworzenie nowych zmiennych w zbiorze `proba_testowa`
+## Tworzenie nowych zmiennych w zbiorze `proba_testowa`
 
 Zbiór `proba_testowa` jest powiązany ze zbiorem `proba_uczaca`, w związku z tym wszelkie operacje wykonane na danych w zbiorze `proba_uczaca` muszą zostać także wykonane na danych w zbiorze `proba_testowa` żeby utrzymać spójność tych zbiorów.
 
@@ -87,7 +86,7 @@ proba_testowa$time_to_expire_result <- round(as.integer(difftime(proba_testowa$t
 Utworzone zostały nowe zmienne za pomocą zmiennej czasowej `createtime` dzięki czemu byliśmy w stanie rozróżnić również rok, miesiąc, dzień.
 Została również utworzona zmienna `time_to_expire_result` za pomocą różnicy w tygodniach pomiędzy datą utworzenia transakcji i wygaśnięcia karty.
 
-### Przedstawienie zbioru danych na wykresach
+## Przedstawienie zbioru danych na wykresach
 
 ```{r data_presetation}
 # Utworzenie funkcji dla tworzenia wykresów
@@ -156,9 +155,9 @@ ggplot(proba_uczaca, aes(x=time_to_expire_result)) +
 ```
 Przedstawione powyżej wykresy pokazują nieusystematyzowane dane które w wielu zmiennych znacznie się od siebie różnią dlatego też zdecydowaliśmy się na ich późniejszą transformację. Szczególnie wyróżnia się tu zmienna `browseragent`
 
-## Operacje na zbiorach danych
+# Operacje na zbiorach danych
 
-###  Imputacja braków danych w zmiennej `browseragent` w zbiorze `proba_uczaca`
+## Imputacja braków danych w zmiennej `browseragent` w zbiorze `proba_uczaca`
 
 Można zauważyć, że transakcje inicjalizujące zawierają informację o `browseragent`, a transakcje rekurencyjne takiej informacji nie posiadają. W związku z tym imputacja następuje poprzez przypisanie takiej samej wartości zmiennej `browseragent` w transakcjach rekurencyjnych jaka jest przy ich transakcji inicjalizującej.
 
@@ -166,70 +165,68 @@ Można zauważyć, że transakcje inicjalizujące zawierają informację o `brow
 Po imputacji braków danych wartości zostają zmienione tak żeby znane było środowisko, w którym działała przeglądarka użyta do realizacji płatności. Postanowiono, że może to lepiej zobrazować dane oraz jest to cenniejsza informacja niż konkretna wersja danej przeglądarki.
 
 ```{r}
-proba_uczaca$initialtransaction_id[is.na(proba_uczaca$initialtransaction_id)] <- proba_uczaca$id[is.na(proba_uczaca$initialtransaction_id)]
-  
-for (i in 1:nrow(proba_uczaca)){
-  if (is.na(proba_uczaca[i,]$browseragent) == TRUE){
-    proba_uczaca[i,]$browseragent <- proba_uczaca[which(proba_uczaca$id == proba_uczaca[i,]$initialtransaction_id),]$browseragent
-  }
-}
-  
-temp <- proba_uczaca[proba_uczaca$browseragent=="Fotka-android",]
-proba_uczaca <- proba_uczaca[!(proba_uczaca$browseragent=="Fotka-android"),]
-browser <- proba_uczaca$browseragent
-browser_sub <- strsplit(browser,"[(]")
-browser_sub <- sapply(browser_sub,'[[',2)
-browser_sub <- strsplit(browser_sub,"[;]")
-browser_sub <-sapply(browser_sub,'[[',1)
-proba_uczaca$browseragent <- browser_sub
-
-proba_uczaca <- rbind(proba_uczaca, temp)
-table(proba_uczaca$browseragent)
+# proba_uczaca$initialtransaction_id[is.na(proba_uczaca$initialtransaction_id)] <- proba_uczaca$id[is.na(proba_uczaca$initialtransaction_id)]
+#   
+# for (i in 1:nrow(proba_uczaca)){
+#   if (is.na(proba_uczaca[i,]$browseragent) == TRUE){
+#     proba_uczaca[i,]$browseragent <- proba_uczaca[which(proba_uczaca$id == proba_uczaca[i,]$initialtransaction_id),]$browseragent
+#   }
+# }
+#   
+# temp <- proba_uczaca[proba_uczaca$browseragent=="Fotka-android",]
+# proba_uczaca <- proba_uczaca[!(proba_uczaca$browseragent=="Fotka-android"),]
+# browser <- proba_uczaca$browseragent
+# browser_sub <- strsplit(browser,"[(]")
+# browser_sub <- sapply(browser_sub,'[[',2)
+# browser_sub <- strsplit(browser_sub,"[;]")
+# browser_sub <-sapply(browser_sub,'[[',1)
+# proba_uczaca$browseragent <- browser_sub
+# 
+# proba_uczaca <- rbind(proba_uczaca, temp)
+# table(proba_uczaca$browseragent)
 
 # Zapisywanie i odczytywanie pliku zostało użyte podczas pracy nad projektem w celu uniknięcia odpalania pętli,
 # która długo trwa.
 
 # saveRDS(proba_uczaca, file = "proba_uczaca.rda")
 
-# proba_uczaca = readRDS(file = "proba_uczaca.rda")
+proba_uczaca = readRDS(file = "proba_uczaca.rda")
 ```
 
-### Imputacja braków danych zmiennej `browseragent` w zbiorze `proba_testowa`
+## Imputacja braków danych zmiennej `browseragent` w zbiorze `proba_testowa`
 `
 ```{r}
-proba_testowa$initialtransaction_id[is.na(proba_testowa$initialtransaction_id)] <- proba_testowa$id[is.na(proba_testowa$initialtransaction_id)]
-  
-for (i in 1:nrow(proba_testowa)){
-  if (is.na(proba_testowa[i,]$browseragent) == TRUE){
-    proba_testowa[i,]$browseragent <- proba_testowa[which(proba_testowa$id == proba_testowa[i,]$initialtransaction_id),]$browseragent
-  }
-}
-  
-temp <- proba_testowa[proba_testowa$browseragent=="Fotka-android",]
-proba_testowa <- proba_testowa[!(proba_testowa$browseragent=="Fotka-android"),]
-browser <- proba_testowa$browseragent
-browser_sub <- strsplit(browser,"[(]")
-browser_sub <- sapply(browser_sub,'[[',2)
-browser_sub <- strsplit(browser_sub,"[;]")
-browser_sub <-sapply(browser_sub,'[[',1)
-proba_testowa$browseragent <- browser_sub
-
-proba_testowa <- rbind(proba_testowa, temp)
-table(proba_testowa$browseragent)
+# proba_testowa$initialtransaction_id[is.na(proba_testowa$initialtransaction_id)] <- proba_testowa$id[is.na(proba_testowa$initialtransaction_id)]
+#   
+# for (i in 1:nrow(proba_testowa)){
+#   if (is.na(proba_testowa[i,]$browseragent) == TRUE){
+#     proba_testowa[i,]$browseragent <- proba_testowa[which(proba_testowa$id == proba_testowa[i,]$initialtransaction_id),]$browseragent
+#   }
+# }
+#   
+# temp <- proba_testowa[proba_testowa$browseragent=="Fotka-android",]
+# proba_testowa <- proba_testowa[!(proba_testowa$browseragent=="Fotka-android"),]
+# browser <- proba_testowa$browseragent
+# browser_sub <- strsplit(browser,"[(]")
+# browser_sub <- sapply(browser_sub,'[[',2)
+# browser_sub <- strsplit(browser_sub,"[;]")
+# browser_sub <-sapply(browser_sub,'[[',1)
+# proba_testowa$browseragent <- browser_sub
+# 
+# proba_testowa <- rbind(proba_testowa, temp)
+# table(proba_testowa$browseragent)
 
 # Zapisywanie i odczytywanie pliku zostało użyte podczas pracy nad projektem w celu uniknięcia odpalania pętli,
 # która długo trwa.
 
 # saveRDS(proba_testowa, file = "proba_testowa.rda")
 
-# proba_testowa = readRDS(file = "proba_testowa.rda")
+proba_testowa = readRDS(file = "proba_testowa.rda")
 ```
 
-### Odrzucenie wartości skrajnych
-
+## Odrzucenie wartości skrajnych
 
 W zbiorze danych, niektóre wartości zmiennej `amount` mogą znacznie wpływać na wyniki modelu ze względu na wyjątkowo duże wartości. Zdecydowano żeby odrzucić rekordy ze zmienną `amount` odbiegającą od średniej o 3 odchylenia standardowe.
-
 
 ```{r}
 mean = mean(proba_uczaca$amount)
@@ -246,7 +243,7 @@ proba_uczaca <- filter(proba_uczaca,(amount > Tmin & amount < Tmax))
 ```
 Wynikiem powyższej operacji jest odrzucenie zaledwie 500-set wartości skrajnych znajdujących się w zmiennej `amount` które były widoczne na histogramie.
 
-### Przedstawienie brakujących danych
+## Przedstawienie brakujących danych po wykonaniu wcześniejszych operacji
 
 ```{r}
 missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
@@ -259,10 +256,10 @@ missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
 
 Jak można zauwazyć zmienna `browseraget` został poprawnie zaimputowana
 
-
-### Recode danych w zbiorze `proba_uczaca`
+## Recode danych w zbiorze `proba_uczaca`
 
 Dane zostały posegregowane według kategorii w celu ustrukturyzowania i ustandaryzowania ilości zmiennych znajdujących się w próbie.
+
 ```{r, echo=FALSE}
 
 
@@ -362,22 +359,21 @@ proba_uczaca$quarter_createtime <- recode(proba_uczaca$month_createtime,
 proba_uczaca$status = relevel(proba_uczaca$status,ref = "sukces")
 ```
 
-### Usunięcie transakcji inicjalizujących ze zbioru `proba_uczaca`
+## Usunięcie transakcji inicjalizujących ze zbioru `proba_uczaca`
 
 ```{r}
 proba_uczaca <- proba_uczaca[!(proba_uczaca$recurringaction=="inicjalizujące"),]
 ```
 
-### Usunięcie nieistotnych zmiennych
+## Usunięcie nieistotnych zmiennych
 
 ```{r}
 proba_uczaca <- proba_uczaca %>% select(-c(screenheight, screenwidth,payclickedtime,id,initialtransaction_id,expirymonth,expiryyear,time_to_expire,createtime,recurringaction,month_createtime))
 ```
 
-Usunięcie zmiennych nieistotnych takich jak `screenheight`, `screenwidth`,`payclickedtime`,`id`,`initialtransaction_id`, `recurringaction`
-oraz zmiennych, które zostały wykorzystane do tworzenia nowych zmiennych `expirymonth`,`expiryyear`,`time_to_expire`,`createtime`,`month_createtime`
+Usunięcie zmiennych nieistotnych takich jak `screenheight`, `screenwidth`,`payclickedtime`,`id`,`initialtransaction_id`, `recurringaction` oraz zmiennych, które zostały wykorzystane do tworzenia nowych zmiennych `expirymonth`,`expiryyear`,`time_to_expire`,`createtime`,`month_createtime`.
 
-### Przedstawienie brakujących danych po wykonanych operacjach
+## Przedstawienie brakujących danych po wykonanych operacjach
 
 ```{r}
 missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
@@ -390,8 +386,10 @@ missing_data_plot <- aggr(proba_uczaca, col=c('forestgreen','firebrick1'),
 
 Można zaobserwować, że po wykonanych czynnościach braki danych nie występują.
 
-## Recode Testowy
+## Recode danych w zbiorze `proba_testowa`
+
 Ta sama czynność została wykonana na zbiorze `proba testowa` w celu ujednolicenia danych
+
 ```{r recode_uczacy, echo=FALSE}
 
 
@@ -489,21 +487,18 @@ proba_testowa$quarter_createtime <- recode(proba_testowa$month_createtime,
                                               "maj" = "II kwartał","czerwiec" = "II kwartał","lipiec" = "III kwartał","sierpień" = "III kwartał","wrzesień" = "III kwartał", .default = "IV kwartał")
 ```
 
-### Usunięcie ze zbioru `proba_testowa` tych samych zmiennych co ze zbioru `proba_uczaca` 
+## Usunięcie ze zbioru `proba_testowa` tych samych zmiennych co ze zbioru `proba_uczaca` 
 
 ```{r}
 proba_testowa <- proba_testowa %>% select(-c(screenheight, screenwidth,payclickedtime,initialtransaction_id,expirymonth,expiryyear,time_to_expire,createtime,month_createtime))
 ```
 
-
 ```{r}
 proba_testowa <- proba_testowa[!(proba_testowa$recurringaction=="inicjalizujące"),]
 ```
 
+## Przedstawienie zbioru danych na wykresach po pogrupowaniu zmiennych
 
-
-
-### Zbiór danych po grupowaniu zmiennych
 ```{r}
 create_plot <- function(variable) {
   ggplot(proba_uczaca , aes(x=factor(variable), fill=factor(variable))) +
@@ -559,15 +554,14 @@ ggplot(proba_uczaca, aes(x=time_to_expire_result)) +
 
 ggplot(proba_uczaca, aes(x=amount)) +
  geom_histogram(color="white", fill="darkgrey")
-
-
 ```
 
 Dane prezentują się teraz w sposób spójny, który umożliwi lepszą naukę tworzonego modelu. 
 
 # Modele klasyfikacyjne
 
-### Podział zbioru na `proba_uczaca` i `proba_walidacyjna`
+## Podział zbioru na `proba_uczaca` i `proba_walidacyjna`
+
 ```{r}
 set.seed(2137)
 
@@ -587,7 +581,7 @@ proba_walidacyjna <- proba_walidacyjna %>% select(-c(id))
 
 Podział został stworzony w celu walidacji utworzonych później modeli.
 
-### Budowa modelu prostego drzewa klasyfikacyjnego
+## Budowa modelu prostego drzewa klasyfikacyjnego
 
 ```{r}
 # Model prostego drzewa
@@ -621,13 +615,9 @@ predicted_simple <- predict(drzewo, proba_walidacyjna, type = "class")
 confusionMatrix(predicted_simple, proba_walidacyjna$status, positive = "sukces", mode="everything")
 ```
 
-
-
-
 Jak można zauważyć na wykresie drzewa oraz w podsumowaniu, najistotniejszą zmienną jest zmienna `browseragent`. Dokładność tego modelu wynosi 82%, a F1-score 90%. Zagłębiając się w dokładność modelu według macierzy błędnych klasyfikacji można zaobserwować nadmiernie błędne klasyfikowanie porażek jako sukcesów. Jednocześnie model ten posiada dobrą rozpoznawalność ocenę sukcesów. W celu polepszenia tej wartości wpierw zostanie utworzony model drzewa klasyfikacyjnego przeuczonego.
 
-### Budowa modelu przeuczonego drzewa klasyfikacyjnego
-
+## Budowa modelu przeuczonego drzewa klasyfikacyjnego
 
 ```{r}
 # Utworzenie pełnego drzewa klasyfikacyjnego dla zmiennej `status`
@@ -638,10 +628,10 @@ drzewo.duze <- rpart(
   control = rpart.control(cp=0)
 )
 
+#Podsumowanie drzewa
 summary(drzewo.duze)
 
-# Wykres Drzewa
- 
+# Wykres drzewa
 rpart.plot(x= drzewo.duze,
            box.palette = "GnBu",
            branch.lty = 3,
@@ -652,17 +642,14 @@ rpart.plot(x= drzewo.duze,
 # Przewidywanie
 predicted_Overfitting  = predict(drzewo.duze, proba_walidacyjna, type = "class")
 confusionMatrix(predicted_Overfitting, proba_walidacyjna$status, positive = "sukces",mode="everything")
-
-
 ```
 
 Model pełnego drzewa klasyfikacyjnego ma dokładność na poziomie 85% oraz F1-score na poziomie 91%. Jest to wynik o tyle lepszy odróżnieni od prostego drzewa, że Sensitivity wzrosło o ponad 40 punktów procentowych. Kolejną różnicą jest to, że w tym modelu najważniejszą zmienną jest `time_to_expire_result`, czyli pozostały czas do minięcia ważności karty płatniczej. Model ten jednakże jest zdecydowanie zbyt złożony co może prowadzić dalej do przeuczenia i słabych wyników w próbie testowej. W celu jego ulepszenia istniejące drzewo zostanie przycięte. 
 
-### Budowa modelu drzewa klasyfikacyjnego przyciętego (optymalnego)
+## Budowa modelu drzewa klasyfikacyjnego przyciętego (optymalnego)
 
 ```{r}
-
-# Model drzewo przycięte 
+# Model drzewa przyciętego
 
 bledy <- drzewo.duze$cptable
 
@@ -681,6 +668,7 @@ rpart.plot(x= drzewo.przyciete,
            
            extra = 104)
 
+# Podsumowanie drzewa
 summary(drzewo.przyciete)
 
 
@@ -688,19 +676,17 @@ summary(drzewo.przyciete)
 predicted_prune  = predict(drzewo.przyciete, proba_walidacyjna, type = "class")
 confusionMatrix(predicted_prune, proba_walidacyjna$status, positive = "sukces",mode="everything")
 cbind(drzewo.przyciete$variable.importance)
-
 ```
-
 
 Model przyciętego drzewa klasyfikacyjnego ma 85% dokładności oraz F1-score na poziomie 91%, jest to wynik taki sam jak w przypadku pełnego drzewa klasyfikacyjnego. Najważniejszą zmienną w tym modelu także jest `time_to_expire_result`, czyli pozostały czas do minięcia ważności karty płatniczej. Następnie wyróżniają się zmienne `browseragent` oraz `amount`. Znaczącą zmniejszył się jednocześnie poziom złożoności samego modelu.
 Drzewo przycięte jest najlepszym z pośród wszystkich wygenerowanych modeli dlatego też zostało użyte do predykcji grupy testowej.
 
-# Modele regresyjne
+# Modele MARS
 
-## Budowa modeli MARS
+## Budowa prostego modelu MARS dla zmiennej `amount`
 
 ```{r}
-# Model MARS dla amount
+# Prosty model MARS dla zmiennej amount
 
 proba_uczaca <- proba_uczaca %>% select(-c(status))
 
@@ -708,41 +694,28 @@ mars1 <- earth(amount ~ .,
                data = proba_uczaca,
                trace=3
                )
+
 summary(mars1)
-
-X <- mars1$bx # macierz faktycznych predyktorów (w finalnym modelu)
-
-punkty <- mars1$cuts
-
-mars1$selected.terms
-przycinanie <- mars1$prune.terms
-
-plot(mars1$rss.per.subset)
-plot(mars1$gcv.per.subset)
 ```
-Został utworzony podstawowy model MARS, którego Wynik `GCV = 1857.408`
 
+Został utworzony podstawowy model MARS, którego Wynik wynosi `GCV = 1857.408`
 
-# Model MARS z interakcjami 
+## Model MARS z interakcjami 
+
 ```{r}
-# Zbudować model MARS pozwalając na interakcje
-
-
 mars2 <- earth(formula = amount ~ .,
                data = proba_uczaca,
                trace= 3,
                degree = 3,
-  
       )
 
 summary(mars2)
-
-
-
 ```
+
 Do modelu zostały dodane interakcje na poziomie maksymalnie trzech co poprawiło znacznie model `GCV = 1522.111`
 
-# Tuning MARS Model
+## Tuning modelu MARS
+
 ```{r}
 # Ustalić optymalne wartości parametrów ('nk', 'minspan', 'thresh')
         # 'nk' - max liczba funkcji bazowych w pierwszej fazie
@@ -805,6 +778,8 @@ plot(mars3, info = T)
 Model został następnie poddany optymalizacji za pomocą dostrojenia 3 parametrów `nk`, `minspan`, `thresh`. 
 GCV 1342.903
 
+## Budowa modelu MARS ze sprawdzaniem krzyżowym
+
 ```{r}
 
 
@@ -822,19 +797,19 @@ mars4 <- earth(formula = amount ~ .,
                nfold = 10,  # liczba części w sprawdzaniu krzyżowym
                ncross = 1, # ile razy wykonać cv (większa wartość = stabilniejsze wyniki)
                keepxy = T) # zachowanie danych x i y, żeby na wykresach diagnostycznych było cv terms 23
-summary(mars3)
+summary(mars4)
+
 mars4$gcv
 
 plot(mars4, which = 1)
 plot(mars3, which = 1)
-
 ```
 
-Podsumowując stworzone modele MARS można stwierdzić że model 4 jest najbardziej optymalny i niewiele różniący się od modelu 3 pod względem wartości gcv. Model 3 posiadał wartość 1342.903 natomiast model 4 wartość 1348.544 jednak drugi z nich wybrał do modelu o 16 mniej składników. 
-# Sporządzić wykres przedstawiający wpływ poszczególnych zmiennych niezależnych na zmienną zależną
+Podsumowując stworzone modele MARS można stwierdzić że model 4 jest najbardziej optymalny i niewiele różniący się od modelu 3 pod względem wartości gcv. Model 3 posiadał wartość 1342.903 natomiast model 4 wartość 1348.544 jednak drugi z nich wybrał do modelu o 16 mniej składników.
+
+## Wykres przedstawiający wpływ poszczególnych zmiennych niezależnych na zmienną zależną
+
 ```{r}
-
-
 plotmo(mars4,
        degree1 = c("mccname"),
        degree2 = F
@@ -849,59 +824,63 @@ plotmo(mars4,
        persp.ticktype="detailed",
        degree1 = F
        )
-table(proba_uczaca$level)
-
-# Oszacować ważność zmiennych objaśniających
-evimp(mars4)  # jest to ważność w modelu (nie ważność w ogóle dla tego problemu regresji)
 ```
+
 Analizując wykresy stworzone za pomocą funkcji plotmo możemy zaobserwować znaczny wpływ na wartość `amount` poprzez zmienną `mccname` w wykresie 2D. Dla wykresów 3D możemy zauważyć zależność między zmiennymi wpływającymi na `amount` takimi jak `mccname` i `level.` Analizując ten wykres widać duży wpływ ubezpieczenia na cenę, która również zwiększa się czym wyższy jest status  karty w zmiennej `level` 
 
-Utworzono 4 modeli MARS z różnymi parametrami. Po analizie wyników do predykcji użyty zostanie model MARS `mars1`.
+Utworzono 4 modele MARS z różnymi parametrami. Po analizie wyników do predykcji użyty zostanie model MARS `mars4`.
 
 # Predykcje
 
-Do predykcji zmiennej `amount` wykorzystano model MARS `mars1`. Do predykcji zmiennej `status` wykorzystano drzewo klasyfikacyjne przycięte.
+Do predykcji zmiennej `amount` wykorzystano model MARS `mars4`. Do predykcji zmiennej `status` wykorzystano drzewo klasyfikacyjne przycięte.
+
 ```{r}
-pred = predict(mars3,proba_testowa,type="earth")
+# Predykcja zmiennej amount
 
+predict_mars = predict(mars4,proba_testowa,type="earth")
 
+predict_mars <- data.frame(predict_mars, proba_testowa$id)
+colnames(predict_mars) <- c("amount","id")
 
-predykcje_testowa <- merge(x=pred,y=predykcje_testowa,by=intersect(names(predykcje_testowa),names(pred)),all.x=T,suffixes = c(".x",".y") ,sort=F) 
+predykcje_testowa <- merge(x=predict_mars,y=predykcje_testowa,by=intersect(names(predykcje_testowa),names(predict_mars)),all.x=T,suffixes = c(".x",".y") ,sort=F) 
 
 proba_testowa$amount <- predykcje_testowa$amount
-predict_final  = predict(drzewo.przyciete, proba_testowa, type = "class")
 
 # Predykcja zmiennej status
-predict_final <- data.frame(predict_final,proba_testowa$id)
-colnames(predict_final) <- c("status","id")
-predict_final
 
-predykcje_testowa <- merge(x=predict_final,y=predykcje_testowa,by="id",all.x=T,suffixes = c(".x",".y") ,sort=F) 
-
+predict_tree  = predict(drzewo.przyciete, proba_testowa, type = "class")
+predict_tree <- data.frame(proba_testowa$id, predict_tree)
+colnames(predict_tree) <- c("id","status")
+predykcje_testowa <- merge(x=predict_tree,y=predykcje_testowa,by="id",all.x=T,suffixes = c(".x",".y") ,sort=F)
 predykcje_testowa <- predykcje_testowa %>% select(-c(status.y))
+
+
 colnames(predykcje_testowa) <- c("id","status","amount")
 
-predykcje_testowa
-
-# saveRDS(predykcje_testowa, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/predykcje_testowa.RData")
+head(predykcje_testowa,50)
 ```
 
-#Saving Models
+# Zapisywanie i ładowanie modeli MARS
+
+## Zapisywanie modeli MARS
 ```{r}
-  saveRDS(mars1, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars1.rda")
-  saveRDS(mars2, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars2.rda")
- saveRDS(mars3, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars3.rda")
-  saveRDS(mars4, file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars4.rda")
-
+# saveRDS(mars1, file = "mars1.rda")
+# saveRDS(mars2, file = "mars2.rda")
+# saveRDS(mars3, file = "mars3.rda")
+# saveRDS(mars4, file = "mars4.rda")
 ```
 
-#Loading Models
+## Ładowanie modeli MARS
 ```{r}
-mars1 = readRDS(file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars1.rda")
-mars2 = readRDS(file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars2.rda")
-mars3  = readRDS(file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars3.rda")
-mars4 = readRDS(file = "C:/Users/modze/Desktop/UG semsetr2/Modele nieparametrycze/Mars/Modele/mars4.rda")
-
+# mars1 = readRDS(file = "mars1.rda")
+# mars2 = readRDS(file = "mars2.rda")
+# mars3  = readRDS(file = "mars3.rda")
+# mars4 = readRDS(file = "mars4.rda")
 ```
 
+# Zapisywanie pliku predykcje_testowa
+
+```{r}
+saveRDS(predykcje_testowa, file = "predykcje_testowa.RData")
+```
 
